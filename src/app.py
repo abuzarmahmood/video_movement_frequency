@@ -18,62 +18,15 @@ from tqdm import tqdm, trange
 from sklearn.decomposition import PCA
 import imageio as iio
 import subprocess
-
-############################################################
-# Use subprocess to record a video for n seconds using ffmpeg
-n = 10 # seconds
-
-# Create a temporary file
-temp_file = "~/Desktop/temp.mp4"
-temp_file = os.path.expanduser(temp_file)
-if os.path.exists(temp_file):
-    os.remove(temp_file)
-
-# Record video
-command = ["ffmpeg", "-f", "v4l2", "-i", "/dev/video0", "-t", str(n), temp_file]
-subprocess.run(command)
-
-# Load video
-camera = iio.get_reader(temp_file)
-meta = camera.get_meta_data()
-duration = meta["duration"]
-fps = meta["fps"]
-n_frames = int(duration * fps)
-
-# Load frames
-frames = []
-for frame_counter in range(n_frames):
-    frame = camera.get_next_data()
-    frames.append(frame)
-
-# Flatten frames and perform pca
-frame_stack = np.stack(frames)
-flat_frame_stack = np.reshape(frame_stack, (frame_stack.shape[0], -1))
-
-pca = PCA(n_components=1)
-pca.fit(flat_frame_stack)
-reduced_frames = pca.transform(flat_frame_stack)
-
-reduced_frames = reduced_frames.flatten()[100:]
-# plt.plot(reduced_frames)
-# plt.show()
-
-# Remove temporary file
-os.remove(temp_file)
-
-# Calculate dominant frequency
-f, Pxx = welch(reduced_frames, fs=fps, nperseg=1024)
-plt.plot(f, Pxx)
-plt.show()
-
-# Find dominant frequency
-dominant_frequency = f[np.argmax(Pxx)]
+from glob import glob
+# import threading
 
 ############################################################
 
 # Convert above process into a class
 
 class CameraFrequency:
+# class CameraFrequency(threading.Thread):
     """
     Class to calculate dominant frequency from camera
     """
@@ -81,27 +34,92 @@ class CameraFrequency:
     def __init__(self, 
                  n_seconds=10,
                  temp_file="~/Desktop/temp.mp4",
+                 output_path = "~/Desktop/freq_out.txt",
                  random_dims = 1000,
                  pca_train_n_frames = 1000,
+                 video_device = None, 
                  ):
+        # threading.Thread.__init__(self)
         self.n_seconds = n_seconds
         self.temp_file = os.path.expanduser(temp_file)
+        self.output_path = os.path.expanduser(output_path)
         self.random_projection = None
         self.random_dims = random_dims
         self.pca_train_n_frames = pca_train_n_frames
         self.pca = None
+        self.optimize_pca = False
+        self.stop = False
+        # self.time_freq_list = []
+        self.temp_file_access_time = None
+        self.loop_delay = 1 # second
+
+        # Check video devices, if only 1 device, use it
+        # Else, ask user to input device
+        if video_device is None:
+            video_devices = sorted(glob("/dev/video*"))
+            if len(video_devices) == 1:
+                self.video_device = video_devices[0]
+            else:
+                print("Multiple video devices found. Please specify the device.")
+                print(list(enumerate(video_devices)))
+                video_index = int(input("Enter the index of the video device: "))
+                self.video_device = video_devices[video_index]
+        else:
+            self.video_device = video_device
 
     def capture_video(self):
         # Create a temporary file
         if os.path.exists(self.temp_file):
             os.remove(self.temp_file)
 
+        print("Capturing video")
+
         # Record video
-        command = ["ffmpeg", "-f", "v4l2", "-i", "/dev/video0", "-t", 
-                   str(self.n_seconds), self.temp_file]
+        command = ["ffmpeg", 
+                   "-f", "v4l2", 
+                   "-r", "30",
+                   "-i", self.video_device, 
+                   "-t", str(self.n_seconds), 
+                   self.temp_file]
+        # subprocess.Popen(command, shell=True)
         subprocess.run(command)
 
+    # def initial_pass(self):
+    #     # Create a temporary file
+    #     if os.path.exists(self.temp_file):
+    #         os.remove(self.temp_file)
+
+    #     print("Initial pass")
+
+    #     # Record video
+    #     command = ["ffmpeg", "-f", "v4l2", "-i", self.video_device, "-t", 
+    #                str(self.n_seconds), self.temp_file]
+    #     subprocess.run(command)
+
+    # def check_file_update(self):
+    #     """
+    #     If self.temp_file is new, return true, else false
+    #     """
+    #     if self.temp_file_access_time == None:
+    #         self.initial_pass()
+    #         if os.path.exists(self.temp_file):
+    #             file_stats = os.stat(self.temp_file)
+    #             self.temp_file_access_time = file_stats.st_atime
+    #             return True
+    #         else:
+    #             return False
+    #     else:
+    #         file_stats = os.stat(self.temp_file)
+    #         this_time = file_stats.st_atime
+    #         if this_time > self.temp_file_access_time:
+    #             self.temp_file_access_time = this_time 
+    #             return True
+    #         else:
+    #             return False
+
     def load_frames(self):
+        # if self.check_file_update():
+        print("Loading frames")
         camera = iio.get_reader(self.temp_file)
         meta = camera.get_meta_data()
         self.duration = meta["duration"]
@@ -121,17 +139,25 @@ class CameraFrequency:
         # Flatten frames and perform pca
         frame_stack = np.stack(frames)
         flat_frame_stack = np.reshape(frame_stack, (frame_stack.shape[0], -1))
+        diff_frame_stack = np.diff(flat_frame_stack, axis=0)
+        zscore_diff_frame_stack = (diff_frame_stack - np.mean(diff_frame_stack, axis=0)) / np.std(diff_frame_stack, axis=0)
 
-        if self.pca is None:
+        if self.pca is None or self.optimize_pca:
             self.pca = PCA(n_components=1)
-            train_inds = np.random.choice(flat_frame_stack.shape[0], self.pca_train_n_frames)
-            self.pca.fit(flat_frame_stack[train_inds, :])
-        reduced_frames = self.pca.transform(flat_frame_stack)
+            max_n = min(self.pca_train_n_frames, flat_frame_stack.shape[0]-1)
+            train_inds = np.random.choice(flat_frame_stack.shape[0]-1, max_n, replace=False)
+            self.pca.fit(zscore_diff_frame_stack[train_inds, :])
+        reduced_frames = self.pca.transform(zscore_diff_frame_stack)
 
         self.reduced_frames = reduced_frames.flatten()# [100:]
 
     def remove_temp_file(self):
-        os.remove(self.temp_file)
+        if os.path.exists(self.temp_file):
+            print("Removing temp file")
+            os.remove(self.temp_file)
+        else:
+            print("Temp file not found...moving on")
+
 
     def calculate_dominant_frequency(self):
         f, Pxx = welch(self.reduced_frames, fs=self.fps, nperseg=1024)
@@ -139,6 +165,13 @@ class CameraFrequency:
         self.Pxx = Pxx
 
         self.dominant_frequency = f[np.argmax(Pxx)]
+
+    def optimize_pca(self):
+        self.optimize_pca = True
+
+    def write_tuple_to_file(self, data):
+        with open(self.output_path, 'a') as f:
+            f.write(str(data)+"\n")
 
     def generate_plots(self):
         fig, ax = plt.subplots(2, 1, figsize=(10, 10))
@@ -154,16 +187,34 @@ class CameraFrequency:
         ax[1].axvline(self.dominant_frequency, color="red", linestyle="--")
         plt.show()
 
-    def run_process(self):
-        """
-        If pca already exists, use it
-        """
+    def run(self):
+        while not self.stop:
+            self.capture_video()
+            self.load_frames()
+            self.calculate_dominant_frequency()
+            self.generate_plots()
+
+            self.remove_temp_file()
+            # self.time_freq_list.append((time.time(), self.dominant_frequency))
+            time_freq_tuple = ((time.time(), self.dominant_frequency))
+            self.write_tuple_to_file(time_freq_tuple)
+            time.sleep(int(self.loop_delay))
+
+
 
 # Create an instance of the class
-camera_frequency = CameraFrequency(n_seconds = 15, random_dims = 100)
+camera_frequency = CameraFrequency(
+        n_seconds = 5, 
+        random_dims = 100,
+        video_device = "/dev/video0",)
+camera_frequency.run()
 # camera_frequency.capture_video()
-camera_frequency.load_frames()
-camera_frequency.calculate_dominant_frequency()
-camera_frequency.generate_plots()
+# camera_frequency.load_frames()
+# camera_frequency.calculate_dominant_frequency()
+# camera_frequency.generate_plots()
+# camera_frequency.remove_temp_file()
 
-camera_frequency.remove_temp_file()
+redeuced_frames = camera_frequency.reduced_frames.copy()
+plt.plot(redeuced_frames)
+plt.show()
+
