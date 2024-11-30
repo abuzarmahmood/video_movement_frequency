@@ -1,10 +1,10 @@
-# opencv-python-headless
-# streamlit_webrtc~=0.47.7
-# streamlit-camera-input-live
-imageio
-imageio-ffmpeg
+opencv-python
 numpy
 scipy
 scikit-learn
 matplotlib
 tqdm
+pandas
+playsound
+imageio
+imageio-ffmpeg
