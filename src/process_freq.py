@@ -84,7 +84,7 @@ for i, freq in enumerate(freq_data):
     freq_vals = freq_vals * 60
     fig, ax = plt.subplots(2, 2, figsize=(12, 8))
     # Format time values to be more readable
-    time_vals = freq['time']
+    time_vals = freq['time'].astype('datetime64[s]').values
     # Full time series plot
     sc = ax[0,0].scatter(time_vals, freq_vals) 
     ln = ax[0,0].plot(time_vals, freq_vals)
@@ -126,21 +126,27 @@ while True:
         freq = pd.read_csv(f, header=None)
         freq.columns = cols
         
+        time_vals = freq['time'].astype('datetime64[s]').values
         freq_vals = freq['freq'].values * 60  # Convert to RPM
         
         # Get recent data window
         time_window = float(time_window_entry.get()) * 60  # Convert minutes to seconds
+        # Convert time_window to datetime64 
+        time_window = np.timedelta64(int(time_window), 's')
         recent_mask = (time_vals.max() - time_vals) <= time_window
         recent_times = time_vals[recent_mask]
         recent_freqs = freq_vals[recent_mask]
 
         # Update full time series
+        # Convert time_vals to same dtype as freq_vals
+        time_vals = np.float64(time_vals)
         scatter_list[i][0].set_offsets(np.c_[time_vals, freq_vals])
         line_list[i][0][0].set_data(time_vals, freq_vals)
         line_list[i][0][0].axes.xaxis.set_major_locator(plt.MaxNLocator(6))
         line_list[i][0][0].axes.xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
         
         # Update recent time series
+        recent_times = np.float64(recent_times)
         scatter_list[i][1].set_offsets(np.c_[recent_times, recent_freqs])
         line_list[i][1][0].set_data(recent_times, recent_freqs)
         line_list[i][1][0].axes.xaxis.set_major_locator(plt.MaxNLocator(6))
