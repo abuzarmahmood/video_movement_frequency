@@ -43,6 +43,17 @@ time_window_entry = tk.Entry(control_frame, width=10)
 time_window_entry.pack(side=tk.LEFT)
 time_window_entry.insert(0, "5")  # Default 5 minutes
 
+# Add median filter length control
+tk.Label(control_frame, text="Median Filter Length:").pack(side=tk.LEFT)
+median_filter_entry = tk.Entry(control_frame, width=10)
+median_filter_entry.pack(side=tk.LEFT)
+median_filter_entry.insert(0, "5")  # Default 5 samples
+
+def apply_median_filter(data, window_length):
+    """Apply median filter to data"""
+    from scipy.signal import medfilt
+    return medfilt(data, kernel_size=int(window_length))
+
 def validate_numeric_input(value, min_val=None, max_val=None, param_name="Parameter"):
     """Validate numeric input with optional range checking"""
     try:
@@ -64,8 +75,11 @@ def apply_parameters():
     valid_time, time_window = validate_numeric_input(
         time_window_entry.get(), min_val=0.1, max_val=60, param_name="Time window"
     )
+    valid_filter, filter_length = validate_numeric_input(
+        median_filter_entry.get(), min_val=1, max_val=1000, param_name="Filter length"
+    )
     
-    if valid_ymin and valid_ymax and valid_time:
+    if valid_ymin and valid_ymax and valid_time and valid_filter:
         if ymin >= ymax:
             print("Y-min must be less than Y-max")
             return
@@ -179,14 +193,41 @@ while True:
         # Convert time_vals to same dtype as freq_vals
         time_vals = np.float64(time_vals)
         scatter_list[i][0].set_offsets(np.c_[time_vals, freq_vals])
+        
+        # Apply median filter to full series
+        _, filter_length = validate_numeric_input(
+            median_filter_entry.get(), min_val=1, max_val=1000, param_name="Filter length"
+        )
+        if filter_length is None:
+            filter_length = 5
+        filtered_vals = apply_median_filter(freq_vals, filter_length)
+        
+        # Plot both raw and filtered data
         line_list[i][0][0].set_data(time_vals, freq_vals)
+        if len(line_list[i][0]) > 1:
+            line_list[i][0][1].set_data(time_vals, filtered_vals)
+        else:
+            filtered_line = line_list[i][0][0].axes.plot(time_vals, filtered_vals, 'r-', label='Filtered')[0]
+            line_list[i][0] = [line_list[i][0][0], filtered_line]
+            line_list[i][0][0].axes.legend()
         line_list[i][0][0].axes.xaxis.set_major_locator(plt.MaxNLocator(6))
         line_list[i][0][0].axes.xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
         
         # Update recent time series
         recent_times = np.float64(recent_times)
         scatter_list[i][1].set_offsets(np.c_[recent_times, recent_freqs])
+        
+        # Apply median filter to recent series
+        filtered_recent = apply_median_filter(recent_freqs, filter_length)
+        
+        # Plot both raw and filtered recent data
         line_list[i][1][0].set_data(recent_times, recent_freqs)
+        if len(line_list[i][1]) > 1:
+            line_list[i][1][1].set_data(recent_times, filtered_recent)
+        else:
+            filtered_line = line_list[i][1][0].axes.plot(recent_times, filtered_recent, 'r-', label='Filtered')[0]
+            line_list[i][1] = [line_list[i][1][0], filtered_line]
+            line_list[i][1][0].axes.legend()
         line_list[i][1][0].axes.xaxis.set_major_locator(plt.MaxNLocator(6))
         line_list[i][1][0].axes.xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
         
