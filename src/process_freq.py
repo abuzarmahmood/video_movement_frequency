@@ -17,7 +17,8 @@ import matplotlib.pyplot as plt
 import tkinter as tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from pprint import pprint as pp
-import winsound
+from playsound import playsound
+import os
 
 # Create the main window
 root = tk.Tk()
@@ -63,9 +64,8 @@ max_freq_entry.insert(0, "3000")
 
 def play_warning():
     """Play warning sound"""
-    frequency = 2500  # Set frequency To 2500 Hertz
-    duration = 100  # Set Duration To 100 ms
-    winsound.Beep(frequency, duration)
+    sound_file = os.path.join(os.path.dirname(__file__), "warning.wav")
+    playsound(sound_file, block=False)
 
 def apply_median_filter(data, window_length):
     """Apply median filter to data"""
