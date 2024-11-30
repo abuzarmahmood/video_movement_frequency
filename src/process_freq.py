@@ -245,7 +245,7 @@ while True:
         # Remove old lines if they exist
         lines = ax.get_lines()
         lines = [l for l in lines if not l.get_label().startswith('Bound')]
-        ax.lines = lines
+        # ax.lines = lines
         
         if min_freq is not None:
             ax.axhline(y=min_freq, color='r', linestyle='--', label='Bound Min')
@@ -275,7 +275,7 @@ while True:
         # Remove old lines if they exist
         lines = ax.get_lines()
         lines = [l for l in lines if not l.get_label().startswith('Bound')]
-        ax.lines = lines
+        # ax.lines = lines
         
         if min_freq is not None:
             ax.axhline(y=min_freq, color='r', linestyle='--', label='Bound Min')
