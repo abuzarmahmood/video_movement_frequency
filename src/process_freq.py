@@ -42,13 +42,19 @@ for i, freq in enumerate(freq_data):
     # Convert from Hz to RPM
     freq_vals = freq_vals * 60
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    sc = ax[0].scatter(freq['time'], freq_vals) 
-    ln = ax[0].plot(freq['time'], freq_vals)
+    # Format time values to be more readable
+    time_vals = freq['time']
+    sc = ax[0].scatter(time_vals, freq_vals) 
+    ln = ax[0].plot(time_vals, freq_vals)
     ax[0].set_title(f"Freq data for device {i}")
     ax[0].set_xlabel('Time (s)')
     ax[0].set_ylabel('Frequency (RPM)')
-    # Rotate x-axis labels
+    # Format x-axis ticks
     ax[0].tick_params(axis='x', rotation=45)
+    # Only show some tick labels to avoid overcrowding
+    ax[0].xaxis.set_major_locator(plt.MaxNLocator(6))
+    # Format numbers with fewer decimal places
+    ax[0].xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
     ax[1].hist(freq_vals, bins=20, orientation='horizontal')
     ax[1].set_title(f"Histogram of freq data for device {i}")
     ax[1].set_xlabel('Count')
@@ -67,8 +73,12 @@ while True:
         freq_vals = freq['freq'].values * 60  # Convert to RPM
         
         # Update time series
-        scatter_list[i].set_offsets(np.c_[freq['time'], freq_vals])
-        line_list[i][0].set_data(freq['time'], freq_vals)
+        time_vals = freq['time']
+        scatter_list[i].set_offsets(np.c_[time_vals, freq_vals])
+        line_list[i][0].set_data(time_vals, freq_vals)
+        # Keep x-axis formatting consistent
+        line_list[i][0].axes.xaxis.set_major_locator(plt.MaxNLocator(6))
+        line_list[i][0].axes.xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
         
         # Update histogram
         hist_list[i].clear()  # Clear previous histogram
