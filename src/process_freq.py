@@ -49,29 +49,35 @@ for i, freq in enumerate(freq_data):
     ax[0].set_ylabel('Frequency (RPM)')
     # Rotate x-axis labels
     ax[0].tick_params(axis='x', rotation=45)
-    hs = ax[1].hist(freq['freq'], bins=20, orientation='horizontal')
+    ax[1].hist(freq_vals, bins=20, orientation='horizontal')
     ax[1].set_title(f"Histogram of freq data for device {i}")
     ax[1].set_xlabel('Count')
     scatter_list.append(sc)
     line_list.append(ln)
-    hist_list.append(hs)
+    hist_list.append(ax[1])  # Store the axis instead of histogram
     plt.tight_layout()
-    # plt.show()
 
-# Load end of file
-# Update plots
-# Repeat
-
+# Load end of file and update plots continuously
 while True:
-    freq_data = [pd.read_csv(f, header=None, skiprows=range(1, len(f))) for f in freq_files] 
-    # Update columns 
-    for i, freq in enumerate(freq_data):
+    for i, f in enumerate(freq_files):
+        # Read the entire file each time to get full history
+        freq = pd.read_csv(f, header=None)
         freq.columns = cols
-    for i, freq in enumerate(freq_data):
-        freq_vals = freq['freq'].values
-        # Convert from Hz to RPM
-        freq_vals = freq_vals * 60
+        
+        freq_vals = freq['freq'].values * 60  # Convert to RPM
+        
+        # Update time series
         scatter_list[i].set_offsets(np.c_[freq['time'], freq_vals])
-        line_list[i][0].set_ydata(freq_vals)
-        # hist_list[i][0].set_height(freq['freq'])
-        plt.draw()
+        line_list[i][0].set_data(freq['time'], freq_vals)
+        
+        # Update histogram
+        hist_list[i].clear()  # Clear previous histogram
+        hist_list[i].hist(freq_vals, bins=20, orientation='horizontal')
+        hist_list[i].set_title(f"Histogram of freq data for device {i}")
+        hist_list[i].set_xlabel('Count')
+        
+        # Update axis limits for time series
+        line_list[i][0].axes.relim()
+        line_list[i][0].axes.autoscale_view()
+        
+    plt.pause(0.1)  # Add small delay and handle GUI events
