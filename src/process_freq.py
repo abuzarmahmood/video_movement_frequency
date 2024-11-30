@@ -85,8 +85,19 @@ def validate_numeric_input(value, min_val=None, max_val=None, param_name="Parame
         print(f"Invalid {param_name}: {str(e)}")
         return False, None
 
+# Store bound lines globally
+bound_lines = []
+
 def apply_parameters():
     """Apply all parameter changes"""
+    global bound_lines
+    
+    # Remove existing bound lines
+    for line in bound_lines:
+        if line.axes is not None:  # Check if line still exists
+            line.remove()
+    bound_lines = []
+    
     # Validate y-axis limits
     valid_ymin, ymin = validate_numeric_input(y_min_entry.get(), param_name="Y-min")
     valid_ymax, ymax = validate_numeric_input(y_max_entry.get(), param_name="Y-max")
@@ -113,6 +124,14 @@ def apply_parameters():
         # Apply y-axis limits to line plots
         for ln in np.array(line_list).flatten():
             ln.axes.set_ylim(ymin, ymax)
+            
+            # Add new bound lines
+            if valid_min_freq:
+                line = ln.axes.axhline(y=min_freq, color='r', linestyle='--', label='Bound Min')
+                bound_lines.append(line)
+            if valid_max_freq:
+                line = ln.axes.axhline(y=max_freq, color='r', linestyle='--', label='Bound Max')
+                bound_lines.append(line)
         
         # Apply y-axis limits to histograms
         for hist_pair in hist_list:
@@ -240,17 +259,6 @@ while True:
         # Plot both raw and filtered data
         line_list[i][0][0].set_data(time_vals, freq_vals)
         
-        # Add/update frequency bound lines
-        ax = line_list[i][0][0].axes
-        # Remove old lines if they exist
-        lines = ax.get_lines()
-        lines = [l for l in lines if not l.get_label().startswith('Bound')]
-        # ax.lines = lines
-        
-        if min_freq is not None:
-            ax.axhline(y=min_freq, color='r', linestyle='--', label='Bound Min')
-        if max_freq is not None:
-            ax.axhline(y=max_freq, color='r', linestyle='--', label='Bound Max')
         if len(line_list[i][0]) > 1:
             line_list[i][0][1].set_data(time_vals, filtered_vals)
         else:
@@ -270,17 +278,6 @@ while True:
         # Plot both raw and filtered recent data
         line_list[i][1][0].set_data(recent_times, recent_freqs)
         
-        # Add/update frequency bound lines for recent plot
-        ax = line_list[i][1][0].axes
-        # Remove old lines if they exist
-        lines = ax.get_lines()
-        lines = [l for l in lines if not l.get_label().startswith('Bound')]
-        # ax.lines = lines
-        
-        if min_freq is not None:
-            ax.axhline(y=min_freq, color='r', linestyle='--', label='Bound Min')
-        if max_freq is not None:
-            ax.axhline(y=max_freq, color='r', linestyle='--', label='Bound Max')
         if len(line_list[i][1]) > 1:
             line_list[i][1][1].set_data(recent_times, filtered_recent)
         else:
