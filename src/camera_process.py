@@ -170,12 +170,17 @@ class camThread(threading.Thread):
         run_cap_freq_estim(self.camID, artifact_dir, plot_dir)
 
 
-camera_ind = sys.argv[1]
-print(f"Running camera {camera_ind}")
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print("Please provide camera index")
+        sys.exit()
 
-thread1 = camThread("Camera 1", int(camera_ind))
-thread1.start()
-thread1.join()
+    camera_ind = sys.argv[1]
+    print(f"Running camera {camera_ind}")
 
-# Force camera release
-cv2.destroyAllWindows()
+    thread1 = camThread("Camera 1", int(camera_ind))
+    thread1.start()
+    thread1.join()
+
+    # Force camera release
+    cv2.destroyAllWindows()

@@ -162,7 +162,7 @@ for i, freq in enumerate(freq_data):
     ax[1,1].set_title(f"Recent histogram for device {i}")
     ax[1,1].set_xlabel('Count')
     scatter_list.append((sc, sc_recent))
-    line_list.append((ln, ln_recent))
+    line_list.append([ln, ln_recent])
     hist_list.append((ax[1,0], ax[1,1]))  # Store both histogram axes
     plt.tight_layout()
 
