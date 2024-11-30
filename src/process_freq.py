@@ -16,6 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tkinter as tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from pprint import pprint as pp
 
 # Create the main window
 root = tk.Tk()
@@ -68,10 +69,11 @@ def apply_parameters():
         if ymin >= ymax:
             print("Y-min must be less than Y-max")
             return
-            
+
         # Apply y-axis limits
-        for ln in line_list:
-            ln[0].axes.set_ylim(ymin, ymax)
+        for ln in np.array(line_list).flatten():
+            # ln[0].axes.set_ylim(ymin, ymax)
+            ln.axes.set_ylim(ymin, ymax)
         
         print("Parameters applied successfully")
     else:
