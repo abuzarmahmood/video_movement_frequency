@@ -36,6 +36,12 @@ y_max_entry = tk.Entry(control_frame, width=10)
 y_max_entry.pack(side=tk.LEFT)
 y_max_entry.insert(0, "1000")
 
+# Add time window control
+tk.Label(control_frame, text="Time Window (min):").pack(side=tk.LEFT)
+time_window_entry = tk.Entry(control_frame, width=10)
+time_window_entry.pack(side=tk.LEFT)
+time_window_entry.insert(0, "5")  # Default 5 minutes
+
 def update_ylims():
     try:
         ymin = float(y_min_entry.get())
@@ -76,26 +82,41 @@ for i, freq in enumerate(freq_data):
     freq_vals = freq['freq'].values
     # Convert from Hz to RPM
     freq_vals = freq_vals * 60
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    fig, ax = plt.subplots(2, 2, figsize=(12, 8))
     # Format time values to be more readable
     time_vals = freq['time']
-    sc = ax[0].scatter(time_vals, freq_vals) 
-    ln = ax[0].plot(time_vals, freq_vals)
-    ax[0].set_title(f"Freq data for device {i}")
-    ax[0].set_xlabel('Time (s)')
-    ax[0].set_ylabel('Frequency (RPM)')
-    # Format x-axis ticks
-    ax[0].tick_params(axis='x', rotation=45)
-    # Only show some tick labels to avoid overcrowding
-    ax[0].xaxis.set_major_locator(plt.MaxNLocator(6))
-    # Format numbers with fewer decimal places
-    ax[0].xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
-    ax[1].hist(freq_vals, bins=20, orientation='horizontal')
-    ax[1].set_title(f"Histogram of freq data for device {i}")
-    ax[1].set_xlabel('Count')
-    scatter_list.append(sc)
-    line_list.append(ln)
-    hist_list.append(ax[1])  # Store the axis instead of histogram
+    # Full time series plot
+    sc = ax[0,0].scatter(time_vals, freq_vals) 
+    ln = ax[0,0].plot(time_vals, freq_vals)
+    ax[0,0].set_title(f"Full freq data for device {i}")
+    ax[0,0].set_xlabel('Time (s)')
+    ax[0,0].set_ylabel('Frequency (RPM)')
+    ax[0,0].tick_params(axis='x', rotation=45)
+    ax[0,0].xaxis.set_major_locator(plt.MaxNLocator(6))
+    ax[0,0].xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
+
+    # Recent time series plot
+    sc_recent = ax[0,1].scatter(time_vals, freq_vals)
+    ln_recent = ax[0,1].plot(time_vals, freq_vals)
+    ax[0,1].set_title(f"Recent freq data for device {i}")
+    ax[0,1].set_xlabel('Time (s)')
+    ax[0,1].set_ylabel('Frequency (RPM)')
+    ax[0,1].tick_params(axis='x', rotation=45)
+    ax[0,1].xaxis.set_major_locator(plt.MaxNLocator(6))
+    ax[0,1].xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
+
+    # Full histogram
+    ax[1,0].hist(freq_vals, bins=20, orientation='horizontal')
+    ax[1,0].set_title(f"Full histogram for device {i}")
+    ax[1,0].set_xlabel('Count')
+
+    # Recent histogram
+    ax[1,1].hist(freq_vals, bins=20, orientation='horizontal')
+    ax[1,1].set_title(f"Recent histogram for device {i}")
+    ax[1,1].set_xlabel('Count')
+    scatter_list.append((sc, sc_recent))
+    line_list.append((ln, ln_recent))
+    hist_list.append((ax[1,0], ax[1,1]))  # Store both histogram axes
     plt.tight_layout()
 
 # Load end of file and update plots continuously
@@ -107,23 +128,40 @@ while True:
         
         freq_vals = freq['freq'].values * 60  # Convert to RPM
         
-        # Update time series
-        time_vals = freq['time']
-        scatter_list[i].set_offsets(np.c_[time_vals, freq_vals])
-        line_list[i][0].set_data(time_vals, freq_vals)
-        # Keep x-axis formatting consistent
-        line_list[i][0].axes.xaxis.set_major_locator(plt.MaxNLocator(6))
-        line_list[i][0].axes.xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
+        # Get recent data window
+        time_window = float(time_window_entry.get()) * 60  # Convert minutes to seconds
+        recent_mask = (time_vals.max() - time_vals) <= time_window
+        recent_times = time_vals[recent_mask]
+        recent_freqs = freq_vals[recent_mask]
+
+        # Update full time series
+        scatter_list[i][0].set_offsets(np.c_[time_vals, freq_vals])
+        line_list[i][0][0].set_data(time_vals, freq_vals)
+        line_list[i][0][0].axes.xaxis.set_major_locator(plt.MaxNLocator(6))
+        line_list[i][0][0].axes.xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
         
-        # Update histogram
-        hist_list[i].clear()  # Clear previous histogram
-        hist_list[i].hist(freq_vals, bins=20, orientation='horizontal')
-        hist_list[i].set_title(f"Histogram of freq data for device {i}")
-        hist_list[i].set_xlabel('Count')
+        # Update recent time series
+        scatter_list[i][1].set_offsets(np.c_[recent_times, recent_freqs])
+        line_list[i][1][0].set_data(recent_times, recent_freqs)
+        line_list[i][1][0].axes.xaxis.set_major_locator(plt.MaxNLocator(6))
+        line_list[i][1][0].axes.xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
         
-        # Update axis limits for time series
-        line_list[i][0].axes.relim()
-        line_list[i][0].axes.autoscale_view()
+        # Update full histogram
+        hist_list[i][0].clear()
+        hist_list[i][0].hist(freq_vals, bins=20, orientation='horizontal')
+        hist_list[i][0].set_title(f"Full histogram for device {i}")
+        hist_list[i][0].set_xlabel('Count')
+
+        # Update recent histogram
+        hist_list[i][1].clear()
+        hist_list[i][1].hist(recent_freqs, bins=20, orientation='horizontal')
+        hist_list[i][1].set_title(f"Recent histogram for device {i}")
+        hist_list[i][1].set_xlabel('Count')
+        
+        # Update axis limits
+        for ln in line_list[i]:
+            ln[0].axes.relim()
+            ln[0].axes.autoscale_view()
         
     plt.pause(0.1)  # Add small delay and handle GUI events
     root.update()  # Update the tkinter window
