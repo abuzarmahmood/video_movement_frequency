@@ -1,4 +1,6 @@
 """
+Process and visualize frequency data with interactive y-axis control
+
 1) Load freq file once
 2) Plot all freq data as scatter
 3) Plot histogram of freq data
@@ -12,6 +14,39 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import tkinter as tk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+# Create the main window
+root = tk.Tk()
+root.title("Frequency Visualization")
+
+# Create frame for controls
+control_frame = tk.Frame(root)
+control_frame.pack(side=tk.TOP, fill=tk.X)
+
+# Create input fields for y-axis limits
+tk.Label(control_frame, text="Y-min:").pack(side=tk.LEFT)
+y_min_entry = tk.Entry(control_frame, width=10)
+y_min_entry.pack(side=tk.LEFT)
+y_min_entry.insert(0, "0")
+
+tk.Label(control_frame, text="Y-max:").pack(side=tk.LEFT)
+y_max_entry = tk.Entry(control_frame, width=10)
+y_max_entry.pack(side=tk.LEFT)
+y_max_entry.insert(0, "1000")
+
+def update_ylims():
+    try:
+        ymin = float(y_min_entry.get())
+        ymax = float(y_max_entry.get())
+        for ln in line_list:
+            ln[0].axes.set_ylim(ymin, ymax)
+    except ValueError:
+        print("Please enter valid numbers")
+
+update_button = tk.Button(control_frame, text="Update Y-Limits", command=update_ylims)
+update_button.pack(side=tk.LEFT)
 
 plt.ion()
 
@@ -91,3 +126,4 @@ while True:
         line_list[i][0].axes.autoscale_view()
         
     plt.pause(0.1)  # Add small delay and handle GUI events
+    root.update()  # Update the tkinter window
