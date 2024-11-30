@@ -5,6 +5,8 @@ from camera_process import calc_freq, run_cap_freq_estim
 import os
 import tempfile
 
+base_dir = '/home/abuzarmahmood/projects/video_movement_frequency'
+
 def generate_chirp_video(
     duration=10,  # seconds
     fps=30,
@@ -79,15 +81,16 @@ def plot_results(true_freq, estimated_freq, plot_dir):
 
 def main():
     # Set up directories
-    artifact_dir = 'artifacts'
-    plot_dir = 'plots'
+    artifact_dir = os.path.join(base_dir, 'artifacts') 
+    plot_dir = os.path.join(base_dir, 'plots') 
     
     # Generate test video
     video_path, true_freq = generate_chirp_video(
         duration=10,
         fps=30,
         start_freq=0.5,
-        end_freq=5.0
+        end_freq=5.0,
+        output_file=os.path.join(artifact_dir, 'chirp_test.avi')
     )
     
     # Analyze video
