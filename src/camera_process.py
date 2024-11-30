@@ -51,9 +51,13 @@ def get_capture(device_id=0, width=320, height=180):
     -------
     cap : cv2.VideoCapture object
     """
-    cap = cv2.VideoCapture(device_id)
-    cap.set(3, width)
-    cap.set(4, height)
+    # Check if device_id is an integer
+    if isinstance(device_id, int):
+        cap = cv2.VideoCapture(device_id)
+        cap.set(3, width)
+        cap.set(4, height)
+    elif isinstance(device_id, str):
+        cap = cv2.VideoCapture(device_id)
     return cap
 
 def run_cap_freq_estim(device_id, artifact_dir, plot_dir):
@@ -61,6 +65,8 @@ def run_cap_freq_estim(device_id, artifact_dir, plot_dir):
             device_id=device_id, 
             width=320, 
             height=180)
+    if not isinstance(device_id, int):
+        device_id = 'test'
     cv2.namedWindow(f'frame_{device_id}')
     cv2.namedWindow(f'var_{device_id}')
     freq_file = os.path.join(artifact_dir, f"freq_data_device{device_id}.csv")
@@ -80,7 +86,15 @@ def run_cap_freq_estim(device_id, artifact_dir, plot_dir):
     frame_list = []
     max_var_timeseries = []
     fs_list = []
-    while(True):
+    # If a video input is given, run loop until video ends
+    if device_id == 'test':
+        n_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+        def condition_tester(counter):
+            return counter < n_frames
+    else:
+        condition_tester = lambda x: True
+    # while(True):
+    while condition_tester(counter):
         # Recreate these lists each time, so that they are not stored
         # Capture frame-by-frame
         ret, frame = cap.read()

@@ -4,11 +4,12 @@ import matplotlib.pyplot as plt
 from camera_process import calc_freq, run_cap_freq_estim
 import os
 import tempfile
+import pandas as pd
 
 base_dir = '/home/abuzarmahmood/projects/video_movement_frequency'
 
 def generate_chirp_video(
-    duration=10,  # seconds
+    duration=20,  # seconds
     fps=30,
     start_freq=0.5,  # Hz
     end_freq=5.0,  # Hz
@@ -67,13 +68,16 @@ def analyze_chirp_video(video_path, artifact_dir, plot_dir):
     
     return estimated_freqs
 
-def plot_results(true_freq, estimated_freq, plot_dir):
+def plot_results(true_freq, 
+                 estimated_x,
+                 estimated_freq, 
+                 plot_dir):
     """
     Plot the comparison between true and estimated frequencies.
     """
     plt.figure(figsize=(10, 6))
     plt.plot(true_freq, label='True Frequency')
-    plt.plot(estimated_freq, label='Estimated Frequency')
+    plt.plot(estimated_x, estimated_freq, label='Estimated Frequency')
     plt.xlabel('Frame Number')
     plt.ylabel('Frequency (Hz)')
     plt.title('True vs Estimated Frequency')
@@ -91,7 +95,7 @@ def main():
     
     # Generate test video
     video_path, true_freq = generate_chirp_video(
-        duration=10,
+        duration=20,
         fps=30,
         start_freq=0.5,
         end_freq=5.0,
@@ -99,13 +103,19 @@ def main():
     )
     
     # Analyze video
-    estimated_freq = analyze_chirp_video(video_path, artifact_dir, plot_dir)
+    # This will eventually break because it expects a camera input
+    _ = analyze_chirp_video(video_path, artifact_dir, plot_dir)
+    estim_data = pd.read_csv(os.path.join(artifact_dir, 'freq_data_devicetest.csv'),
+                             header=None)
+    estim_data.columns = ['frame_rate', 'freq_val', 'time', 'counter']
+    estimated_x = estim_data['counter']
+    estimated_freq = estim_data['freq_val']
     
     # Plot results
-    plot_results(true_freq, estimated_freq, plot_dir)
+    plot_results(true_freq, estimated_x, estimated_freq, plot_dir)
     
     # Clean up
-    os.remove(video_path)
+    # os.remove(video_path)
 
 if __name__ == "__main__":
     main()
