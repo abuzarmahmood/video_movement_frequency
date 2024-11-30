@@ -37,9 +37,14 @@ def generate_chirp_video(
     
     # Generate frames
     x = np.linspace(0, 2*np.pi, resolution[0])
+    spatial_freq = 5  # constant spatial frequency
+    
+    # Phase will increase based on instantaneous frequency
+    phase = np.cumsum(freq) / fps * 2 * np.pi
+    
     for i in range(n_frames):
-        # Create spatial wave pattern
-        wave = np.sin(freq[i] * x)
+        # Create spatial wave pattern with temporal modulation
+        wave = np.sin(spatial_freq * x + phase[i])
         # Expand to 2D
         frame = np.tile(wave, (resolution[1], 1))
         # Normalize to 0-255 range
