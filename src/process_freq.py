@@ -42,17 +42,44 @@ time_window_entry = tk.Entry(control_frame, width=10)
 time_window_entry.pack(side=tk.LEFT)
 time_window_entry.insert(0, "5")  # Default 5 minutes
 
-def update_ylims():
+def validate_numeric_input(value, min_val=None, max_val=None, param_name="Parameter"):
+    """Validate numeric input with optional range checking"""
     try:
-        ymin = float(y_min_entry.get())
-        ymax = float(y_max_entry.get())
+        num_val = float(value)
+        if min_val is not None and num_val < min_val:
+            raise ValueError(f"{param_name} must be greater than {min_val}")
+        if max_val is not None and num_val > max_val:
+            raise ValueError(f"{param_name} must be less than {max_val}")
+        return True, num_val
+    except ValueError as e:
+        print(f"Invalid {param_name}: {str(e)}")
+        return False, None
+
+def apply_parameters():
+    """Apply all parameter changes"""
+    # Validate y-axis limits
+    valid_ymin, ymin = validate_numeric_input(y_min_entry.get(), param_name="Y-min")
+    valid_ymax, ymax = validate_numeric_input(y_max_entry.get(), param_name="Y-max")
+    valid_time, time_window = validate_numeric_input(
+        time_window_entry.get(), min_val=0.1, max_val=60, param_name="Time window"
+    )
+    
+    if valid_ymin and valid_ymax and valid_time:
+        if ymin >= ymax:
+            print("Y-min must be less than Y-max")
+            return
+            
+        # Apply y-axis limits
         for ln in line_list:
             ln[0].axes.set_ylim(ymin, ymax)
-    except ValueError:
-        print("Please enter valid numbers")
+        
+        print("Parameters applied successfully")
+    else:
+        print("Parameter validation failed")
 
-update_button = tk.Button(control_frame, text="Update Y-Limits", command=update_ylims)
-update_button.pack(side=tk.LEFT)
+# Create apply button
+apply_button = tk.Button(control_frame, text="Apply Parameters", command=apply_parameters)
+apply_button.pack(side=tk.LEFT, padx=5)
 
 plt.ion()
 
@@ -129,8 +156,13 @@ while True:
         time_vals = freq['time'].astype('datetime64[s]').values
         freq_vals = freq['freq'].values * 60  # Convert to RPM
         
-        # Get recent data window
-        time_window = float(time_window_entry.get()) * 60  # Convert minutes to seconds
+        # Get recent data window - validate input
+        _, time_val = validate_numeric_input(
+            time_window_entry.get(), min_val=0.1, max_val=60, param_name="Time window"
+        )
+        if time_val is None:
+            time_val = 5  # Default to 5 minutes if invalid
+        time_window = time_val * 60  # Convert minutes to seconds
         # Convert time_window to datetime64 
         time_window = np.timedelta64(int(time_window), 's')
         recent_mask = (time_vals.max() - time_vals) <= time_window
