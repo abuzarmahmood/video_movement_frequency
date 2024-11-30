@@ -70,10 +70,14 @@ def apply_parameters():
             print("Y-min must be less than Y-max")
             return
 
-        # Apply y-axis limits
+        # Apply y-axis limits to line plots
         for ln in np.array(line_list).flatten():
-            # ln[0].axes.set_ylim(ymin, ymax)
             ln.axes.set_ylim(ymin, ymax)
+        
+        # Apply y-axis limits to histograms
+        for hist_pair in hist_list:
+            for hist_ax in hist_pair:
+                hist_ax.set_ylim(ymin, ymax)
         
         print("Parameters applied successfully")
     else:
