@@ -253,7 +253,7 @@ while True:
         
         # Check if filtered values exceed bounds and play warning if they do
         if min_freq is not None and max_freq is not None:
-            if any((filtered_vals < min_freq) | (filtered_vals > max_freq)):
+            if (filtered_vals[-1] < min_freq) | (filtered_vals[-1] > max_freq):
                 play_warning()
         
         # Plot both raw and filtered data
