@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import tkinter as tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from pprint import pprint as pp
+import winsound
 
 # Create the main window
 root = tk.Tk()
@@ -49,6 +50,23 @@ median_filter_entry = tk.Entry(control_frame, width=10)
 median_filter_entry.pack(side=tk.LEFT)
 median_filter_entry.insert(0, "5")  # Default 5 samples
 
+# Add frequency bounds controls
+tk.Label(control_frame, text="Min Freq (RPM):").pack(side=tk.LEFT)
+min_freq_entry = tk.Entry(control_frame, width=10)
+min_freq_entry.pack(side=tk.LEFT)
+min_freq_entry.insert(0, "0")
+
+tk.Label(control_frame, text="Max Freq (RPM):").pack(side=tk.LEFT)
+max_freq_entry = tk.Entry(control_frame, width=10)
+max_freq_entry.pack(side=tk.LEFT)
+max_freq_entry.insert(0, "3000")
+
+def play_warning():
+    """Play warning sound"""
+    frequency = 2500  # Set frequency To 2500 Hertz
+    duration = 100  # Set Duration To 100 ms
+    winsound.Beep(frequency, duration)
+
 def apply_median_filter(data, window_length):
     """Apply median filter to data"""
     from scipy.signal import medfilt
@@ -79,7 +97,15 @@ def apply_parameters():
         median_filter_entry.get(), min_val=1, max_val=1000, param_name="Filter length"
     )
     
-    if valid_ymin and valid_ymax and valid_time and valid_filter:
+    # Validate frequency bounds
+    valid_min_freq, min_freq = validate_numeric_input(
+        min_freq_entry.get(), min_val=0, param_name="Min frequency"
+    )
+    valid_max_freq, max_freq = validate_numeric_input(
+        max_freq_entry.get(), min_val=0, param_name="Max frequency"
+    )
+        
+    if valid_ymin and valid_ymax and valid_time and valid_filter and valid_min_freq and valid_max_freq:
         if ymin >= ymax:
             print("Y-min must be less than Y-max")
             return
@@ -202,8 +228,29 @@ while True:
             filter_length = 5
         filtered_vals = apply_median_filter(freq_vals, filter_length)
         
+        # Get frequency bounds
+        _, min_freq = validate_numeric_input(min_freq_entry.get(), min_val=0, param_name="Min frequency")
+        _, max_freq = validate_numeric_input(max_freq_entry.get(), min_val=0, param_name="Max frequency")
+        
+        # Check if filtered values exceed bounds and play warning if they do
+        if min_freq is not None and max_freq is not None:
+            if any((filtered_vals < min_freq) | (filtered_vals > max_freq)):
+                play_warning()
+        
         # Plot both raw and filtered data
         line_list[i][0][0].set_data(time_vals, freq_vals)
+        
+        # Add/update frequency bound lines
+        ax = line_list[i][0][0].axes
+        # Remove old lines if they exist
+        lines = ax.get_lines()
+        lines = [l for l in lines if not l.get_label().startswith('Bound')]
+        ax.lines = lines
+        
+        if min_freq is not None:
+            ax.axhline(y=min_freq, color='r', linestyle='--', label='Bound Min')
+        if max_freq is not None:
+            ax.axhline(y=max_freq, color='r', linestyle='--', label='Bound Max')
         if len(line_list[i][0]) > 1:
             line_list[i][0][1].set_data(time_vals, filtered_vals)
         else:
@@ -222,6 +269,18 @@ while True:
         
         # Plot both raw and filtered recent data
         line_list[i][1][0].set_data(recent_times, recent_freqs)
+        
+        # Add/update frequency bound lines for recent plot
+        ax = line_list[i][1][0].axes
+        # Remove old lines if they exist
+        lines = ax.get_lines()
+        lines = [l for l in lines if not l.get_label().startswith('Bound')]
+        ax.lines = lines
+        
+        if min_freq is not None:
+            ax.axhline(y=min_freq, color='r', linestyle='--', label='Bound Min')
+        if max_freq is not None:
+            ax.axhline(y=max_freq, color='r', linestyle='--', label='Bound Max')
         if len(line_list[i][1]) > 1:
             line_list[i][1][1].set_data(recent_times, filtered_recent)
         else:
