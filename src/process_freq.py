@@ -213,8 +213,7 @@ for i, freq in enumerate(freq_data):
     # Format time values to be more readable
     time_vals = freq['time'].astype('datetime64[s]').values
     # Full time series plot
-    sc = ax[0,0].scatter(time_vals, freq_vals) 
-    ln = ax[0,0].plot(time_vals, freq_vals)
+    ln = ax[0,0].plot(time_vals, freq_vals, 'b-', label='Raw')
     ax[0,0].set_title(f"Full freq data for device {i}")
     ax[0,0].set_xlabel('Time')
     ax[0,0].set_ylabel('Frequency (RPM)')
@@ -223,8 +222,7 @@ for i, freq in enumerate(freq_data):
     ax[0,0].xaxis.set_major_formatter(DateFormatter('%H:%M:%S'))
 
     # Recent time series plot
-    sc_recent = ax[0,1].scatter(time_vals, freq_vals)
-    ln_recent = ax[0,1].plot(time_vals, freq_vals)
+    ln_recent = ax[0,1].plot(time_vals, freq_vals, 'b-', label='Raw')
     ax[0,1].set_title(f"Recent freq data for device {i}")
     ax[0,1].set_xlabel('Time')
     ax[0,1].set_ylabel('Frequency (RPM)')
@@ -241,8 +239,7 @@ for i, freq in enumerate(freq_data):
     ax[1,1].hist(freq_vals, bins=20, orientation='horizontal')
     ax[1,1].set_title(f"Recent histogram for device {i}")
     ax[1,1].set_xlabel('Count')
-    scatter_list.append((sc, sc_recent))
-    line_list.append([ln, ln_recent])
+    line_list.append([ln[0], ln_recent[0]])
     hist_list.append((ax[1,0], ax[1,1]))  # Store both histogram axes
     plt.tight_layout()
 
@@ -272,7 +269,7 @@ while True:
         # Update full time series
         # Convert time_vals to same dtype as freq_vals
         time_vals = np.float64(time_vals)
-        scatter_list[i][0].set_offsets(np.c_[time_vals, freq_vals])
+        line_list[i][0].set_data(time_vals, freq_vals)
         
         # Apply median filter to full series
         _, filter_length = validate_numeric_input(
@@ -307,7 +304,7 @@ while True:
         
         # Update recent time series
         recent_times = np.float64(recent_times)
-        scatter_list[i][1].set_offsets(np.c_[recent_times, recent_freqs])
+        line_list[i][1].set_data(recent_times, recent_freqs)
         
         # Apply median filter to recent series
         filtered_recent = apply_filter(recent_freqs, filter_length, use_mean_var.get())
