@@ -60,7 +60,7 @@ def get_capture(device_id=0, width=320, height=180):
         cap = cv2.VideoCapture(device_id)
     return cap
 
-def run_cap_freq_estim(device_id, artifact_dir, plot_dir):
+def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100):
     cap = get_capture(
             device_id=device_id, 
             width=320, 
@@ -80,7 +80,6 @@ def run_cap_freq_estim(device_id, artifact_dir, plot_dir):
         if user_input == 'y':
             os.remove(freq_file)
     n_max_var_pixels = 25
-    n_history = 100
     counter = 0
     time_stamps = []
     frame_list = []
@@ -181,7 +180,7 @@ class camThread(threading.Thread):
     def run(self):
         print("Starting " + self.previewName)
         # camPreview(self.previewName, self.camID)
-        run_cap_freq_estim(self.camID, artifact_dir, plot_dir)
+        run_cap_freq_estim(self.camID, artifact_dir, plot_dir, n_history=100)
 
 
 if __name__ == '__main__':
