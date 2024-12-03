@@ -68,9 +68,15 @@ def play_warning():
     playsound(sound_file, block=False)
 
 def apply_median_filter(data, window_length):
-    """Apply median filter to data"""
-    from scipy.signal import medfilt
-    return medfilt(data, kernel_size=int(window_length))
+    """Apply median filter to data where current value is last in window"""
+    import numpy as np
+    window_length = int(window_length)
+    filtered = np.zeros_like(data)
+    for i in range(len(data)):
+        start_idx = max(0, i - window_length + 1)
+        window = data[start_idx:i + 1]
+        filtered[i] = np.median(window)
+    return filtered
 
 def validate_numeric_input(value, min_val=None, max_val=None, param_name="Parameter"):
     """Validate numeric input with optional range checking"""
