@@ -27,9 +27,13 @@ class MainGUI:
         self.n_history = ttk.Entry(camera_frame, width=10)
         self.n_history.grid(row=1, column=1, padx=5, pady=5)
         self.n_history.insert(0, "100")
+
+        ttk.Label(camera_frame, text="Animal Number:").grid(row=2, column=0, padx=5, pady=5)
+        self.animal_number = ttk.Entry(camera_frame, width=10)
+        self.animal_number.grid(row=2, column=1, padx=5, pady=5)
         
         self.camera_button = ttk.Button(camera_frame, text="Start Camera", command=self.toggle_camera)
-        self.camera_button.grid(row=2, column=0, columnspan=2, pady=10)
+        self.camera_button.grid(row=3, column=0, columnspan=2, pady=10)
         
         # Frequency Analysis Section
         freq_frame = ttk.LabelFrame(main_frame, text="Frequency Analysis", padding="5")
@@ -62,6 +66,16 @@ class MainGUI:
                       os.path.join(os.path.dirname(__file__), "camera_process.py"),
                       str(camera_idx),
                       "--n_history", str(n_history)]
+                
+                # Add animal number if provided
+                animal_num = self.animal_number.get()
+                if animal_num:
+                    try:
+                        animal_num = int(animal_num)
+                        cmd.extend(["--animal-number", str(animal_num)])
+                    except ValueError:
+                        messagebox.showerror("Error", "Animal number must be a valid integer")
+                        return
                 
                 self.camera_process = subprocess.Popen(cmd)
                 self.camera_running = True
