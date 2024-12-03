@@ -204,7 +204,7 @@ for i, freq in enumerate(freq_data):
     freq_vals = freq['freq'].values
     # Convert from Hz to RPM
     freq_vals = freq_vals * 60
-    fig, ax = plt.subplots(2, 2, figsize=(12, 8))
+    fig, ax = plt.subplots(2, 2, figsize=(8, 4))
     # Format time values to be more readable
     time_vals = freq['time'].astype('datetime64[s]').values
     # Full time series plot
