@@ -59,8 +59,10 @@ median_filter_entry.insert(0, "5")  # Default 5 samples
 use_mean_var = tk.BooleanVar()
 use_mean_checkbox = tk.Checkbutton(control_frame, text="Use Mean Filter", variable=use_mean_var)
 use_mean_checkbox.pack(side=tk.LEFT)
+
 # Make default true
 use_mean_var.set(True)
+
 
 # Add frequency bounds controls
 tk.Label(control_frame, text="Min Freq (RPM):").pack(side=tk.LEFT)
@@ -91,10 +93,12 @@ def play_warning():
         _warning_thread = threading.Thread(target=_play, daemon=True)
         _warning_thread.start()
 
+
 def stop_warning():
     """Stop the warning sound"""
     global _is_warning
     _is_warning = False
+
 
 def apply_filter(data, window_length, use_mean=False):
     """Apply median or mean filter to data where current value is last in window"""
