@@ -14,6 +14,7 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.dates import DateFormatter
 import tkinter as tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from pprint import pprint as pp
@@ -215,21 +216,21 @@ for i, freq in enumerate(freq_data):
     sc = ax[0,0].scatter(time_vals, freq_vals) 
     ln = ax[0,0].plot(time_vals, freq_vals)
     ax[0,0].set_title(f"Full freq data for device {i}")
-    ax[0,0].set_xlabel('Time (s)')
+    ax[0,0].set_xlabel('Time')
     ax[0,0].set_ylabel('Frequency (RPM)')
     ax[0,0].tick_params(axis='x', rotation=45)
     ax[0,0].xaxis.set_major_locator(plt.MaxNLocator(6))
-    ax[0,0].xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
+    ax[0,0].xaxis.set_major_formatter(DateFormatter('%H:%M:%S'))
 
     # Recent time series plot
     sc_recent = ax[0,1].scatter(time_vals, freq_vals)
     ln_recent = ax[0,1].plot(time_vals, freq_vals)
     ax[0,1].set_title(f"Recent freq data for device {i}")
-    ax[0,1].set_xlabel('Time (s)')
+    ax[0,1].set_xlabel('Time')
     ax[0,1].set_ylabel('Frequency (RPM)')
     ax[0,1].tick_params(axis='x', rotation=45)
     ax[0,1].xaxis.set_major_locator(plt.MaxNLocator(6))
-    ax[0,1].xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
+    ax[0,1].xaxis.set_major_formatter(DateFormatter('%H:%M:%S'))
 
     # Full histogram
     ax[1,0].hist(freq_vals, bins=20, orientation='horizontal')
