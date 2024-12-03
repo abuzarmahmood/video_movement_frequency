@@ -304,7 +304,8 @@ while True:
             ax.legend()
         
         ax.xaxis.set_major_locator(plt.MaxNLocator(6))
-        ax.xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
+        ax.xaxis.set_major_formatter(DateFormatter('%H:%M:%S'))
+        ax.tick_params(axis='x', rotation=45)
         
         # Update recent time series
         # recent_times = np.float64(recent_times)
@@ -327,7 +328,8 @@ while True:
             ax_recent.legend()
         
         ax_recent.xaxis.set_major_locator(plt.MaxNLocator(6))
-        ax_recent.xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
+        ax_recent.xaxis.set_major_formatter(DateFormatter('%H:%M:%S'))
+        ax_recent.tick_params(axis='x', rotation=45)
         
         # Update full histogram
         hist_list[i][0].clear()
