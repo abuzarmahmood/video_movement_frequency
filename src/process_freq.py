@@ -86,7 +86,7 @@ def play_warning():
             global _is_warning
             while _is_warning:
                 play(_warning_sound)
-                time.sleep(0.5)
+                time.sleep(1)
         _warning_thread = threading.Thread(target=_play, daemon=True)
         _warning_thread.start()
 
