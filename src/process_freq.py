@@ -45,11 +45,16 @@ time_window_entry = tk.Entry(control_frame, width=10)
 time_window_entry.pack(side=tk.LEFT)
 time_window_entry.insert(0, "5")  # Default 5 minutes
 
-# Add median filter length control
-tk.Label(control_frame, text="Median Filter Length:").pack(side=tk.LEFT)
+# Add filter controls
+tk.Label(control_frame, text="Filter Length:").pack(side=tk.LEFT)
 median_filter_entry = tk.Entry(control_frame, width=10)
 median_filter_entry.pack(side=tk.LEFT)
 median_filter_entry.insert(0, "5")  # Default 5 samples
+
+# Add checkbox for mean/median selection
+use_mean_var = tk.BooleanVar()
+use_mean_checkbox = tk.Checkbutton(control_frame, text="Use Mean Filter", variable=use_mean_var)
+use_mean_checkbox.pack(side=tk.LEFT)
 
 # Add frequency bounds controls
 tk.Label(control_frame, text="Min Freq (RPM):").pack(side=tk.LEFT)
@@ -67,15 +72,15 @@ def play_warning():
     sound_file = os.path.join(os.path.dirname(__file__), "warning.wav")
     playsound(sound_file, block=False)
 
-def apply_median_filter(data, window_length):
-    """Apply median filter to data where current value is last in window"""
+def apply_filter(data, window_length, use_mean=False):
+    """Apply median or mean filter to data where current value is last in window"""
     import numpy as np
     window_length = int(window_length)
     filtered = np.zeros_like(data)
     for i in range(len(data)):
         start_idx = max(0, i - window_length + 1)
         window = data[start_idx:i + 1]
-        filtered[i] = np.median(window)
+        filtered[i] = np.mean(window) if use_mean else np.median(window)
     return filtered
 
 def validate_numeric_input(value, min_val=None, max_val=None, param_name="Parameter"):
@@ -251,7 +256,7 @@ while True:
         )
         if filter_length is None:
             filter_length = 5
-        filtered_vals = apply_median_filter(freq_vals, filter_length)
+        filtered_vals = apply_filter(freq_vals, filter_length, use_mean_var.get())
         
         # Get frequency bounds
         _, min_freq = validate_numeric_input(min_freq_entry.get(), min_val=0, param_name="Min frequency")
@@ -279,7 +284,7 @@ while True:
         scatter_list[i][1].set_offsets(np.c_[recent_times, recent_freqs])
         
         # Apply median filter to recent series
-        filtered_recent = apply_median_filter(recent_freqs, filter_length)
+        filtered_recent = apply_filter(recent_freqs, filter_length, use_mean_var.get())
         
         # Plot both raw and filtered recent data
         line_list[i][1][0].set_data(recent_times, recent_freqs)
