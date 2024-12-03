@@ -21,6 +21,7 @@ from pydub import AudioSegment
 from pydub.playback import play
 import os
 import threading
+import time
 
 # Create the main window
 root = tk.Tk()
@@ -39,7 +40,7 @@ y_min_entry.insert(0, "0")
 tk.Label(control_frame, text="Y-max:").pack(side=tk.LEFT)
 y_max_entry = tk.Entry(control_frame, width=10)
 y_max_entry.pack(side=tk.LEFT)
-y_max_entry.insert(0, "1000")
+y_max_entry.insert(0, "100")
 
 # Add time window control
 tk.Label(control_frame, text="Time Window (min):").pack(side=tk.LEFT)
@@ -57,17 +58,19 @@ median_filter_entry.insert(0, "5")  # Default 5 samples
 use_mean_var = tk.BooleanVar()
 use_mean_checkbox = tk.Checkbutton(control_frame, text="Use Mean Filter", variable=use_mean_var)
 use_mean_checkbox.pack(side=tk.LEFT)
+# Make default true
+use_mean_var.set(True)
 
 # Add frequency bounds controls
 tk.Label(control_frame, text="Min Freq (RPM):").pack(side=tk.LEFT)
 min_freq_entry = tk.Entry(control_frame, width=10)
 min_freq_entry.pack(side=tk.LEFT)
-min_freq_entry.insert(0, "0")
+min_freq_entry.insert(0, "35")
 
 tk.Label(control_frame, text="Max Freq (RPM):").pack(side=tk.LEFT)
 max_freq_entry = tk.Entry(control_frame, width=10)
 max_freq_entry.pack(side=tk.LEFT)
-max_freq_entry.insert(0, "3000")
+max_freq_entry.insert(0, "75")
 
 # Load sound file once at startup
 _warning_sound = AudioSegment.from_wav(os.path.join(os.path.dirname(__file__), "warning.wav"))
@@ -83,6 +86,7 @@ def play_warning():
             global _is_warning
             while _is_warning:
                 play(_warning_sound)
+                time.sleep(0.5)
         _warning_thread = threading.Thread(target=_play, daemon=True)
         _warning_thread.start()
 
@@ -336,5 +340,9 @@ while True:
             ln[0].axes.relim()
             ln[0].axes.autoscale_view()
         
+    # Apply parameters if this is the first time
+    if len(bound_lines) == 0:
+        apply_parameters()
+
     plt.pause(0.1)  # Add small delay and handle GUI events
     root.update()  # Update the tkinter window
