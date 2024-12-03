@@ -17,8 +17,10 @@ import matplotlib.pyplot as plt
 import tkinter as tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from pprint import pprint as pp
-from playsound import playsound
+from pydub import AudioSegment
+from pydub.playback import play
 import os
+import threading
 
 # Create the main window
 root = tk.Tk()
@@ -67,10 +69,14 @@ max_freq_entry = tk.Entry(control_frame, width=10)
 max_freq_entry.pack(side=tk.LEFT)
 max_freq_entry.insert(0, "3000")
 
+# Load sound file once at startup
+_warning_sound = AudioSegment.from_wav(os.path.join(os.path.dirname(__file__), "warning.wav"))
+
 def play_warning():
-    """Play warning sound"""
-    sound_file = os.path.join(os.path.dirname(__file__), "warning.wav")
-    playsound(sound_file, block=False)
+    """Play warning sound in a separate thread"""
+    def _play():
+        play(_warning_sound)
+    threading.Thread(target=_play, daemon=True).start()
 
 def apply_filter(data, window_length, use_mean=False):
     """Apply median or mean filter to data where current value is last in window"""

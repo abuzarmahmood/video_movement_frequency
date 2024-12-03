@@ -5,6 +5,6 @@ scikit-learn
 matplotlib
 tqdm
 pandas
-playsound
+pydub
 imageio
 imageio-ffmpeg
