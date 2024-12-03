@@ -62,7 +62,23 @@ def get_capture(device_id=0, width=320, height=180):
         cap = cv2.VideoCapture(device_id)
     return cap
 
-def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100, no_overwrite=True):
+def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=3, no_overwrite=True):
+    """
+    Run camera frequency estimation
+    
+    Parameters
+    ----------
+    device_id : int or str
+        Camera device index or video file path
+    artifact_dir : str
+        Directory to save frequency data
+    plot_dir : str
+        Directory to save plots
+    n_history : float
+        Number of seconds of data to use for frequency estimation
+    no_overwrite : bool
+        If True, don't overwrite existing files
+    """
     cap = get_capture(
             device_id=device_id, 
             width=320, 
@@ -120,9 +136,14 @@ def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100, no_over
         # 1) Average frame rate and display on image
         # 2) Pixels with most variability, and display on image
         # if len(time_stamps) > n_history:
-        if counter % n_history == 0 and counter > 0:
-            frame_rate = 1 / np.mean(np.diff(time_stamps[-n_history:]))
-            variance = np.var(frame_list[-n_history:], axis=0)
+        # Calculate current frame rate
+        if len(time_stamps) > 1:
+            current_frame_rate = 1 / np.mean(np.diff(time_stamps))
+            
+            # Check if we have collected enough seconds of data
+            if time_stamps[-1] - time_stamps[0] >= n_history:
+                frame_rate = current_frame_rate
+                variance = np.var(frame_list, axis=0)
             var_color = cv2.applyColorMap(
                 np.uint8(variance / np.max(variance) * 255), cv2.COLORMAP_JET)
             # Instead of using the most variable pixels, sample pixels
@@ -178,7 +199,7 @@ def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100, no_over
 ############################################################
 
 class camThread(threading.Thread):
-    def __init__(self, previewName, camID, n_history=100, no_overwrite=True):
+    def __init__(self, previewName, camID, n_history=3, no_overwrite=True):
         threading.Thread.__init__(self)
         self.previewName = previewName
         self.camID = camID
@@ -193,8 +214,8 @@ class camThread(threading.Thread):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Camera frequency estimation')
     parser.add_argument('camera_index', type=int, help='Camera device index')
-    parser.add_argument('--n_history', type=int, default=100,
-                      help='Number of frames to use for frequency estimation (default: 100)')
+    parser.add_argument('--n_history', type=float, default=3,
+                      help='Number of seconds of data to use for frequency estimation (default: 3)')
     parser.add_argument('--no-overwrite', action='store_true', help='Do not overwrite existing files')
     args = parser.parse_args()
 
