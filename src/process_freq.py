@@ -343,8 +343,8 @@ while True:
         
         # Update axis limits
         for ln in line_list[i]:
-            ln[0].axes.relim()
-            ln[0].axes.autoscale_view()
+            ln.axes.relim()
+            ln.axes.autoscale_view()
         
     # Apply parameters if this is the first time
     if len(bound_lines) == 0:
