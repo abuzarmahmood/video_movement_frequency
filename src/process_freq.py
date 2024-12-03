@@ -71,12 +71,25 @@ max_freq_entry.insert(0, "3000")
 
 # Load sound file once at startup
 _warning_sound = AudioSegment.from_wav(os.path.join(os.path.dirname(__file__), "warning.wav"))
+_warning_thread = None
+_is_warning = False
 
 def play_warning():
     """Play warning sound in a separate thread"""
-    def _play():
-        play(_warning_sound)
-    threading.Thread(target=_play, daemon=True).start()
+    global _warning_thread, _is_warning
+    if not _is_warning:
+        _is_warning = True
+        def _play():
+            global _is_warning
+            while _is_warning:
+                play(_warning_sound)
+        _warning_thread = threading.Thread(target=_play, daemon=True)
+        _warning_thread.start()
+
+def stop_warning():
+    """Stop the warning sound"""
+    global _is_warning
+    _is_warning = False
 
 def apply_filter(data, window_length, use_mean=False):
     """Apply median or mean filter to data where current value is last in window"""
@@ -268,10 +281,12 @@ while True:
         _, min_freq = validate_numeric_input(min_freq_entry.get(), min_val=0, param_name="Min frequency")
         _, max_freq = validate_numeric_input(max_freq_entry.get(), min_val=0, param_name="Max frequency")
         
-        # Check if filtered values exceed bounds and play warning if they do
+        # Check if filtered values exceed bounds and play/stop warning accordingly
         if min_freq is not None and max_freq is not None:
             if (filtered_vals[-1] < min_freq) | (filtered_vals[-1] > max_freq):
                 play_warning()
+            else:
+                stop_warning()
         
         # Plot both raw and filtered data
         line_list[i][0][0].set_data(time_vals, freq_vals)
