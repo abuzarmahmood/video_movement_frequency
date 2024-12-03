@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 from time import sleep, time
 from datetime import datetime
+import argparse
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -184,16 +185,23 @@ class camThread(threading.Thread):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print("Please provide camera index")
-        sys.exit()
+    parser = argparse.ArgumentParser(description='Camera frequency estimation')
+    parser.add_argument('camera_index', type=int, help='Camera device index')
+    parser.add_argument('--n_history', type=int, default=100,
+                      help='Number of frames to use for frequency estimation (default: 100)')
+    args = parser.parse_args()
 
-    camera_ind = sys.argv[1]
-    print(f"Running camera {camera_ind}")
+    print(f"Running camera {args.camera_index} with n_history={args.n_history}")
 
-    thread1 = camThread("Camera 1", int(camera_ind))
+    thread1 = camThread("Camera 1", args.camera_index)
+    thread1.run_cap_freq_estim = lambda: run_cap_freq_estim(
+        args.camera_index, 
+        artifact_dir, 
+        plot_dir, 
+        n_history=args.n_history
+    )
     thread1.start()
     thread1.join()
 
-    # Force camera release
+    # Force camera release 
     cv2.destroyAllWindows()
