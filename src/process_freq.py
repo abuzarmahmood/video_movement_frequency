@@ -213,7 +213,7 @@ for i, freq in enumerate(freq_data):
     # Format time values to be more readable
     time_vals = freq['time'].astype('datetime64[s]').values
     # Full time series plot
-    ln = ax[0,0].plot(time_vals, freq_vals, 'b-', label='Raw')
+    ln = ax[0,0].plot(time_vals, freq_vals, '-o', label='Raw', color='b')
     ax[0,0].set_title(f"Full freq data for device {i}")
     ax[0,0].set_xlabel('Time')
     ax[0,0].set_ylabel('Frequency (RPM)')
@@ -222,7 +222,7 @@ for i, freq in enumerate(freq_data):
     ax[0,0].xaxis.set_major_formatter(DateFormatter('%H:%M:%S'))
 
     # Recent time series plot
-    ln_recent = ax[0,1].plot(time_vals, freq_vals, 'b-', label='Raw')
+    ln_recent = ax[0,1].plot(time_vals, freq_vals, '-o', label='Raw', color='b') 
     ax[0,1].set_title(f"Recent freq data for device {i}")
     ax[0,1].set_xlabel('Time')
     ax[0,1].set_ylabel('Frequency (RPM)')
@@ -268,7 +268,7 @@ while True:
 
         # Update full time series
         # Convert time_vals to same dtype as freq_vals
-        time_vals = np.float64(time_vals)
+        # time_vals = np.float64(time_vals)
         line_list[i][0].set_data(time_vals, freq_vals)
         
         # Apply median filter to full series
@@ -307,7 +307,7 @@ while True:
         ax.xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
         
         # Update recent time series
-        recent_times = np.float64(recent_times)
+        # recent_times = np.float64(recent_times)
         line_list[i][1].set_data(recent_times, recent_freqs)
         
         # Apply median filter to recent series
