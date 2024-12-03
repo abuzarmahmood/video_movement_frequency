@@ -11,6 +11,7 @@ from sklearn.decomposition import PCA
 from scipy.signal import welch
 import threading
 import sys
+from functools import partial
 
 # base_dir = '/home/abuzarmahmood/projects/video_movement_frequency'
 script_path = os.path.realpath(__file__)
@@ -61,7 +62,7 @@ def get_capture(device_id=0, width=320, height=180):
         cap = cv2.VideoCapture(device_id)
     return cap
 
-def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100):
+def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100, no_overwrite=True):
     cap = get_capture(
             device_id=device_id, 
             width=320, 
@@ -71,7 +72,9 @@ def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100):
     cv2.namedWindow(f'frame_{device_id}')
     cv2.namedWindow(f'var_{device_id}')
     freq_file = os.path.join(artifact_dir, f"freq_data_device{device_id}.csv")
-    if os.path.exists(freq_file):
+    # Check if file exists
+    # If no_overwrite is False, then overwrite
+    if os.path.exists(freq_file) and not no_overwrite:
         # Ask user if they want to overwrite
         print(f"File {freq_file} already exists. Overwrite? (y/n)")
         user_input = input()
@@ -94,6 +97,7 @@ def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100):
     else:
         condition_tester = lambda x: True
     # while(True):
+    print(f'Using history of {n_history} frames')
     while condition_tester(counter):
         # Recreate these lists each time, so that they are not stored
         # Capture frame-by-frame
@@ -145,7 +149,7 @@ def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100):
         if counter > n_history:
             print_str_list = [
                     f"Frame rate: {frame_rate:.2f} fps",
-                    f"Peak frequency: {freq_val:.2f} Hz",
+                    f"Peak frequency: {freq_val:.2f} Hz, {freq_val * 60:.2f} bpm",
                     f"Time: {str_time}",
                     f"Counter: {counter}"
                     ]
@@ -174,14 +178,16 @@ def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100):
 ############################################################
 
 class camThread(threading.Thread):
-    def __init__(self, previewName, camID):
+    def __init__(self, previewName, camID, n_history=100, no_overwrite=True):
         threading.Thread.__init__(self)
         self.previewName = previewName
         self.camID = camID
+        self.n_history = n_history
+        self.no_overwrite = no_overwrite
     def run(self):
         print("Starting " + self.previewName)
         # camPreview(self.previewName, self.camID)
-        run_cap_freq_estim(self.camID, artifact_dir, plot_dir, n_history=100)
+        run_cap_freq_estim(self.camID, artifact_dir, plot_dir, n_history=self.n_history, no_overwrite=self.no_overwrite)
 
 
 if __name__ == '__main__':
@@ -189,17 +195,18 @@ if __name__ == '__main__':
     parser.add_argument('camera_index', type=int, help='Camera device index')
     parser.add_argument('--n_history', type=int, default=100,
                       help='Number of frames to use for frequency estimation (default: 100)')
+    parser.add_argument('--no-overwrite', action='store_true', help='Do not overwrite existing files')
     args = parser.parse_args()
 
     print(f"Running camera {args.camera_index} with n_history={args.n_history}")
 
-    thread1 = camThread("Camera 1", args.camera_index)
-    thread1.run_cap_freq_estim = lambda: run_cap_freq_estim(
-        args.camera_index, 
-        artifact_dir, 
-        plot_dir, 
-        n_history=args.n_history
-    )
+    thread1 = camThread("Camera 1", args.camera_index, n_history=args.n_history, no_overwrite=args.no_overwrite)
+    # thread1.run_cap_freq_estim = lambda: run_cap_freq_estim(
+    #     args.camera_index, 
+    #     artifact_dir, 
+    #     plot_dir, 
+    #     n_history=args.n_history
+    # )
     thread1.start()
     thread1.join()
 
