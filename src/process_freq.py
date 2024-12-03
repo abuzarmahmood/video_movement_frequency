@@ -291,16 +291,20 @@ while True:
                 stop_warning()
         
         # Plot both raw and filtered data
-        line_list[i][0][0].set_data(time_vals, freq_vals)
+        line_list[i][0].set_data(time_vals, freq_vals)
         
-        if len(line_list[i][0]) > 1:
-            line_list[i][0][1].set_data(time_vals, filtered_vals)
+        # Get the axes object from the first line
+        ax = line_list[i][0].axes
+        
+        # Check if we already have a filtered line plotted
+        if len(ax.lines) > 1:
+            ax.lines[1].set_data(time_vals, filtered_vals)
         else:
-            filtered_line = line_list[i][0][0].axes.plot(time_vals, filtered_vals, 'r-', label='Filtered')[0]
-            line_list[i][0] = [line_list[i][0][0], filtered_line]
-            line_list[i][0][0].axes.legend()
-        line_list[i][0][0].axes.xaxis.set_major_locator(plt.MaxNLocator(6))
-        line_list[i][0][0].axes.xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
+            filtered_line = ax.plot(time_vals, filtered_vals, 'r-', label='Filtered')[0]
+            ax.legend()
+        
+        ax.xaxis.set_major_locator(plt.MaxNLocator(6))
+        ax.xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
         
         # Update recent time series
         recent_times = np.float64(recent_times)
@@ -310,16 +314,20 @@ while True:
         filtered_recent = apply_filter(recent_freqs, filter_length, use_mean_var.get())
         
         # Plot both raw and filtered recent data
-        line_list[i][1][0].set_data(recent_times, recent_freqs)
+        line_list[i][1].set_data(recent_times, recent_freqs)
         
-        if len(line_list[i][1]) > 1:
-            line_list[i][1][1].set_data(recent_times, filtered_recent)
+        # Get the axes object from the recent line
+        ax_recent = line_list[i][1].axes
+        
+        # Check if we already have a filtered line plotted
+        if len(ax_recent.lines) > 1:
+            ax_recent.lines[1].set_data(recent_times, filtered_recent)
         else:
-            filtered_line = line_list[i][1][0].axes.plot(recent_times, filtered_recent, 'r-', label='Filtered')[0]
-            line_list[i][1] = [line_list[i][1][0], filtered_line]
-            line_list[i][1][0].axes.legend()
-        line_list[i][1][0].axes.xaxis.set_major_locator(plt.MaxNLocator(6))
-        line_list[i][1][0].axes.xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
+            filtered_line = ax_recent.plot(recent_times, filtered_recent, 'r-', label='Filtered')[0]
+            ax_recent.legend()
+        
+        ax_recent.xaxis.set_major_locator(plt.MaxNLocator(6))
+        ax_recent.xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
         
         # Update full histogram
         hist_list[i][0].clear()
