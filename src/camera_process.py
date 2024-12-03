@@ -62,7 +62,7 @@ def get_capture(device_id=0, width=320, height=180):
         cap = cv2.VideoCapture(device_id)
     return cap
 
-def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=3, no_overwrite=True):
+def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=3, no_overwrite=True, animal_number=None):
     """
     Run camera frequency estimation
     
@@ -87,7 +87,8 @@ def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=3, no_overwr
         device_id = 'test'
     cv2.namedWindow(f'frame_{device_id}')
     cv2.namedWindow(f'var_{device_id}')
-    freq_file = os.path.join(artifact_dir, f"freq_data_device{device_id}.csv")
+    file_id = f"animal{animal_number}" if animal_number is not None else f"device{device_id}"
+    freq_file = os.path.join(artifact_dir, f"freq_data_{file_id}.csv")
     # Check if file exists
     # If no_overwrite is False, then overwrite
     if os.path.exists(freq_file) and not no_overwrite:
@@ -199,16 +200,20 @@ def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=3, no_overwr
 ############################################################
 
 class camThread(threading.Thread):
-    def __init__(self, previewName, camID, n_history=3, no_overwrite=True):
+    def __init__(self, previewName, camID, n_history=3, no_overwrite=True, animal_number=None):
         threading.Thread.__init__(self)
         self.previewName = previewName
         self.camID = camID
         self.n_history = n_history
         self.no_overwrite = no_overwrite
+        self.animal_number = animal_number
     def run(self):
         print("Starting " + self.previewName)
         # camPreview(self.previewName, self.camID)
-        run_cap_freq_estim(self.camID, artifact_dir, plot_dir, n_history=self.n_history, no_overwrite=self.no_overwrite)
+        run_cap_freq_estim(self.camID, artifact_dir, plot_dir, 
+                          n_history=self.n_history, 
+                          no_overwrite=self.no_overwrite,
+                          animal_number=self.animal_number)
 
 
 if __name__ == '__main__':
@@ -217,11 +222,15 @@ if __name__ == '__main__':
     parser.add_argument('--n_history', type=float, default=3,
                       help='Number of seconds of data to use for frequency estimation (default: 3)')
     parser.add_argument('--no-overwrite', action='store_true', help='Do not overwrite existing files')
+    parser.add_argument('--animal-number', type=int, help='Animal number to use in output filename')
     args = parser.parse_args()
 
     print(f"Running camera {args.camera_index} with n_history={args.n_history}")
 
-    thread1 = camThread("Camera 1", args.camera_index, n_history=args.n_history, no_overwrite=args.no_overwrite)
+    thread1 = camThread("Camera 1", args.camera_index, 
+                       n_history=args.n_history, 
+                       no_overwrite=args.no_overwrite,
+                       animal_number=args.animal_number)
     # thread1.run_cap_freq_estim = lambda: run_cap_freq_estim(
     #     args.camera_index, 
     #     artifact_dir, 
