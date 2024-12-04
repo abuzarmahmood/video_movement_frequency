@@ -16,20 +16,24 @@ recent_data_dir = os.path.join(base_dir, 'artifacts', 'recent_data')
 
 # Function to load and process data
 def load_data(device_num):
-    recent_data_file = os.path.join(recent_data_dir, f'recent_data_device_{device_num}.csv')
-    bounds_file = os.path.join(recent_data_dir, f'freq_bounds_device_{device_num}.csv')
-    
-    if not os.path.exists(recent_data_file):
+    try:
+        recent_data_file = os.path.join(recent_data_dir, f'recent_data_device_{device_num}.csv')
+        bounds_file = os.path.join(recent_data_dir, f'freq_bounds_device_{device_num}.csv')
+        
+        if not os.path.exists(recent_data_file):
+            return None, None
+        
+        data = pd.read_csv(recent_data_file)
+        data['time'] = pd.to_datetime(data['time'])
+        
+        bounds = None
+        if os.path.exists(bounds_file):
+            bounds = pd.read_csv(bounds_file)
+        
+        return data, bounds
+    except Exception as e:
+        st.error(f"Error loading data for device {device_num}: {str(e)}")
         return None, None
-    
-    data = pd.read_csv(recent_data_file)
-    data['time'] = pd.to_datetime(data['time'])
-    
-    bounds = None
-    if os.path.exists(bounds_file):
-        bounds = pd.read_csv(bounds_file)
-    
-    return data, bounds
 
 # Function to create plot
 def create_plot(data, bounds, device_num):
