@@ -13,25 +13,11 @@ import pygame
 # Initialize pygame mixer and global variables
 pygame.mixer.init()
 
-# Global variables for warning system
-global warning_active, warning_thread
-warning_active = False
-warning_thread = None
-
-def cleanup():
-    """Cleanup function to stop warning thread"""
-    global warning_active
-    warning_active = False
-    if warning_thread is not None and warning_thread.is_alive():
-        warning_thread.join(timeout=1.0)
-
-# Register cleanup function
-atexit.register(cleanup)
 
 # Create a simple warning beep
 def create_warning_beep():
     sample_rate = 44100
-    duration = 0.2  # seconds
+    duration = 0.5  # seconds
     frequency = 440  # Hz
     t = np.linspace(0, duration, int(sample_rate * duration))
     samples = np.sin(2 * np.pi * frequency * t)
@@ -44,11 +30,6 @@ def create_warning_beep():
 # Initialize warning sound
 warning_beep = create_warning_beep()
 
-def play_warning_loop():
-    global warning_active
-    while warning_active:
-        warning_beep.play()
-        time.sleep(1)
 
 st.set_page_config(page_title="Frequency Monitor", layout="wide")
 st.title("Real-time Frequency Monitoring")
@@ -192,16 +173,9 @@ else:
                             freq_out_of_bounds = current_freq < min_freq or current_freq > max_freq
                             if freq_out_of_bounds:
                                 st.error("⚠️ Frequency out of bounds!")
-                                if not warning_active:
-                                    # Start new warning
-                                    warning_active = True
-                                    warning_thread = threading.Thread(target=play_warning_loop)
-                                    warning_thread.daemon = True
-                                    warning_thread.start()
+                                warning_beep.play()
                             else:
                                 st.success("✅ Frequency within bounds")
-                                if warning_active:
-                                    cleanup()  # Stop warning when back in bounds
                         
                         # Create and display plot
                         fig = create_plot(data, bounds, device_num)
