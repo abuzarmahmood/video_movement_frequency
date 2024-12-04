@@ -226,6 +226,8 @@ script_path = os.path.realpath(__file__)
 base_dir = os.path.dirname(script_path)
 base_dir = '/home/abuzarmahmood/projects/video_movement_frequency'
 artifact_dir = os.path.join(base_dir, 'artifacts')
+recent_data_dir = os.path.join(artifact_dir, 'recent_data')
+os.makedirs(recent_data_dir, exist_ok=True)
 
 # Get all files in artifact_dir
 freq_files = glob(os.path.join(artifact_dir, 'freq_data_device*.csv'))
@@ -386,6 +388,17 @@ while True:
         hist_list[i][1].hist(recent_freqs, bins=20, orientation='horizontal')
         hist_list[i][1].set_title(f"Recent histogram for device {i}")
         hist_list[i][1].set_xlabel('Count')
+
+        # Write recent data to file
+        recent_data = pd.DataFrame({
+            'time': recent_times,
+            'freq': recent_freqs,
+            'freq_filtered': filtered_recent
+        })
+        recent_data.to_csv(
+            os.path.join(recent_data_dir, f'recent_data_device_{i}.csv'),
+            index=False
+        )
         
         # Update axis limits
         for ln in line_list[i]:
