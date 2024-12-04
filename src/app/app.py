@@ -118,31 +118,39 @@ else:
     
     # Create plots for each device
     for i, device_num in enumerate(device_numbers):
-        data, bounds = load_data(device_num)
-        
-        if data is not None:
+        try:
+            data, bounds = load_data(device_num)
+            
+            if data is not None and not data.empty:
+                with cols[i]:
+                    try:
+                        # Display current frequency
+                        current_freq = data['freq_filtered'].iloc[-1]
+                        st.metric(
+                            f"Device {device_num} Current Frequency",
+                            f"{current_freq:.1f} RPM"
+                        )
+                        
+                        # Check if frequency is within bounds
+                        if bounds is not None and not bounds.empty:
+                            min_freq = bounds['min_freq'].iloc[0]
+                            max_freq = bounds['max_freq'].iloc[0]
+                            if current_freq < min_freq or current_freq > max_freq:
+                                st.error("⚠️ Frequency out of bounds!")
+                            else:
+                                st.success("✅ Frequency within bounds")
+                        
+                        # Create and display plot
+                        fig = create_plot(data, bounds, device_num)
+                        st.plotly_chart(fig, use_container_width=True)
+                    except Exception as e:
+                        st.error(f"Error processing data for Device {device_num}: {str(e)}")
+            else:
+                with cols[i]:
+                    st.warning(f"No valid data available for Device {device_num}")
+        except Exception as e:
             with cols[i]:
-                # Display current frequency
-                current_freq = data['freq_filtered'].iloc[-1]
-                st.metric(
-                    f"Device {device_num} Current Frequency",
-                    f"{current_freq:.1f} RPM"
-                )
-                
-                # Check if frequency is within bounds
-                if bounds is not None:
-                    min_freq = bounds['min_freq'].iloc[0]
-                    max_freq = bounds['max_freq'].iloc[0]
-                    if current_freq < min_freq or current_freq > max_freq:
-                        st.error("⚠️ Frequency out of bounds!")
-                    else:
-                        st.success("✅ Frequency within bounds")
-                
-                # Create and display plot
-                fig = create_plot(data, bounds, device_num)
-                st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.error(f"No data available for Device {device_num}")
+                st.error(f"Error processing Device {device_num}: {str(e)}")
     
     # Auto-refresh
     time.sleep(refresh_interval)
