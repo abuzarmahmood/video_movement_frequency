@@ -62,7 +62,8 @@ def get_capture(device_id=0, width=320, height=180):
         cap = cv2.VideoCapture(device_id)
     return cap
 
-def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100, no_overwrite=True, animal_number=None):
+def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100, no_overwrite=True, animal_number=None,
+                      roi=None):
     """
     Run camera frequency estimation
     
@@ -78,6 +79,8 @@ def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100, no_over
         Number of data points to use as history 
     no_overwrite : bool
         If True, don't overwrite existing files
+    roi : tuple, optional
+        Region of interest (x, y, width, height) to analyze. If None, use full frame.
     """
     cap = get_capture(
             device_id=device_id, 
@@ -122,6 +125,18 @@ def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100, no_over
 
         # Our operations on the frame come here
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        
+        # If ROI is specified, only use that region
+        if roi is not None:
+            x, y, w, h = roi
+            gray_roi = gray[y:y+h, x:x+w]
+        else:
+            gray_roi = gray
+
+        # Draw ROI rectangle if specified
+        if roi is not None:
+            x, y, w, h = roi
+            cv2.rectangle(gray, (x, y), (x+w, y+h), (255, 0, 0), 2)
 
         # Display the resulting frame
         time_stamps.append(time())
@@ -139,7 +154,13 @@ def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100, no_over
         # if len(time_stamps) > n_history:
         if counter % n_history == 0 and counter > 0:
             frame_rate = 1 / np.mean(np.diff(time_stamps[-n_history:]))
-            variance = np.var(frame_list[-n_history:], axis=0)
+            # Calculate variance on ROI if specified
+            if roi is not None:
+                x, y, w, h = roi
+                frame_array = np.array([f[y:y+h, x:x+w] for f in frame_list[-n_history:]])
+                variance = np.var(frame_array, axis=0)
+            else:
+                variance = np.var(frame_list[-n_history:], axis=0)
             var_color = cv2.applyColorMap(
                 np.uint8(variance / np.max(variance) * 255), cv2.COLORMAP_JET)
             # Instead of using the most variable pixels, sample pixels
@@ -195,7 +216,7 @@ def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100, no_over
 ############################################################
 
 class camThread(threading.Thread):
-    def __init__(self, previewName, camID, n_history=100, no_overwrite=True, animal_number=None):
+    def __init__(self, previewName, camID, n_history=100, no_overwrite=True, animal_number=None, roi=None):
         threading.Thread.__init__(self)
         self.previewName = previewName
         self.camID = camID
@@ -205,10 +226,11 @@ class camThread(threading.Thread):
     def run(self):
         print("Starting " + self.previewName)
         # camPreview(self.previewName, self.camID)
-        run_cap_freq_estim(self.camID, artifact_dir, plot_dir, 
-                          n_history=self.n_history, 
+        run_cap_freq_estim(self.camID, artifact_dir, plot_dir,
+                          n_history=self.n_history,
                           no_overwrite=self.no_overwrite,
-                          animal_number=self.animal_number)
+                          animal_number=self.animal_number,
+                          roi=self.roi)
 
 
 if __name__ == '__main__':
@@ -218,14 +240,18 @@ if __name__ == '__main__':
                       help='Number of frames to use for frequency estimation (default: 100)')
     parser.add_argument('--no-overwrite', action='store_true', help='Do not overwrite existing files')
     parser.add_argument('--animal-number', type=int, help='Animal number to use in output filename')
+    parser.add_argument('--roi', type=int, nargs=4, 
+                      metavar=('x', 'y', 'width', 'height'),
+                      help='Region of interest (x y width height)')
     args = parser.parse_args()
 
     print(f"Running camera {args.camera_index} with n_history={args.n_history}")
 
-    thread1 = camThread("Camera 1", args.camera_index, 
-                       n_history=args.n_history, 
+    thread1 = camThread("Camera 1", args.camera_index,
+                       n_history=args.n_history,
                        no_overwrite=args.no_overwrite,
-                       animal_number=args.animal_number)
+                       animal_number=args.animal_number,
+                       roi=args.roi)
     # thread1.run_cap_freq_estim = lambda: run_cap_freq_estim(
     #     args.camera_index, 
     #     artifact_dir, 
