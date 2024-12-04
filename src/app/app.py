@@ -6,6 +6,33 @@ from glob import glob
 import os
 import time
 from datetime import datetime, timedelta
+import threading
+import pygame.mixer
+import pygame
+
+# Initialize pygame mixer
+pygame.mixer.init()
+
+# Create a simple warning beep
+def create_warning_beep():
+    sample_rate = 44100
+    duration = 0.2  # seconds
+    frequency = 440  # Hz
+    t = np.linspace(0, duration, int(sample_rate * duration))
+    samples = np.sin(2 * np.pi * frequency * t)
+    scaled = np.int16(samples * 32767)
+    return pygame.sndarray.make_sound(scaled)
+
+# Initialize warning sound
+warning_beep = create_warning_beep()
+warning_active = False
+warning_thread = None
+
+def play_warning_loop():
+    global warning_active
+    while warning_active:
+        warning_beep.play()
+        time.sleep(1)
 
 st.set_page_config(page_title="Frequency Monitor", layout="wide")
 st.title("Real-time Frequency Monitoring")
@@ -135,10 +162,18 @@ else:
                         if bounds is not None and not bounds.empty:
                             min_freq = bounds['min_freq'].iloc[0]
                             max_freq = bounds['max_freq'].iloc[0]
-                            if current_freq < min_freq or current_freq > max_freq:
+                            freq_out_of_bounds = current_freq < min_freq or current_freq > max_freq
+                            if freq_out_of_bounds:
                                 st.error("⚠️ Frequency out of bounds!")
+                                global warning_active, warning_thread
+                                if not warning_active:
+                                    warning_active = True
+                                    warning_thread = threading.Thread(target=play_warning_loop)
+                                    warning_thread.daemon = True
+                                    warning_thread.start()
                             else:
                                 st.success("✅ Frequency within bounds")
+                                warning_active = False
                         
                         # Create and display plot
                         fig = create_plot(data, bounds, device_num)
