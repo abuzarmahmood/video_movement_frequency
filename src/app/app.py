@@ -128,12 +128,23 @@ def create_plot(data, bounds, device_num):
                      fillcolor="red", opacity=0.2,
                      layer="below", name="Above Range")
     
+    # Set y-axis limits from bounds if available
+    y_min = None
+    y_max = None
+    if bounds is not None and not bounds.empty:
+        if 'y_min' in bounds.columns and 'y_max' in bounds.columns:
+            y_min = bounds['y_min'].iloc[0]
+            y_max = bounds['y_max'].iloc[0]
+
     fig.update_layout(
         title=f"Device {device_num} Frequency Data",
         xaxis_title="Time",
         yaxis_title="Frequency (RPM)",
         height=400,
-        showlegend=True
+        showlegend=True,
+        yaxis=dict(
+            range=[y_min, y_max] if y_min is not None and y_max is not None else None
+        )
     )
     
     return fig
