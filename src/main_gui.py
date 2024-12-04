@@ -4,6 +4,7 @@ import subprocess
 import sys
 import os
 import threading
+import json
 
 class MainGUI:
     def __init__(self, root):
@@ -35,9 +36,21 @@ class MainGUI:
         self.camera_button = ttk.Button(camera_frame, text="Start Camera", command=self.toggle_camera)
         self.camera_button.grid(row=3, column=0, columnspan=2, pady=10)
         
+        # ROI Selection Section
+        roi_frame = ttk.LabelFrame(main_frame, text="ROI Selection", padding="5")
+        roi_frame.grid(row=1, column=0, padx=5, pady=5, sticky=(tk.W, tk.E))
+        
+        ttk.Label(roi_frame, text="Camera Index:").grid(row=0, column=0, padx=5, pady=5)
+        self.roi_camera_index = ttk.Entry(roi_frame, width=10)
+        self.roi_camera_index.grid(row=0, column=1, padx=5, pady=5)
+        self.roi_camera_index.insert(0, "0")
+        
+        self.roi_button = ttk.Button(roi_frame, text="Select ROI", command=self.select_roi)
+        self.roi_button.grid(row=1, column=0, columnspan=2, pady=10)
+        
         # Frequency Analysis Section
         freq_frame = ttk.LabelFrame(main_frame, text="Frequency Analysis", padding="5")
-        freq_frame.grid(row=1, column=0, padx=5, pady=5, sticky=(tk.W, tk.E))
+        freq_frame.grid(row=2, column=0, padx=5, pady=5, sticky=(tk.W, tk.E))
         
         self.freq_button = ttk.Button(freq_frame, text="Start Frequency Analysis", 
                                     command=self.start_freq_analysis)
@@ -45,7 +58,7 @@ class MainGUI:
         
         # Status section
         status_frame = ttk.LabelFrame(main_frame, text="Status", padding="5")
-        status_frame.grid(row=2, column=0, padx=5, pady=5, sticky=(tk.W, tk.E))
+        status_frame.grid(row=3, column=0, padx=5, pady=5, sticky=(tk.W, tk.E))
         
         self.status_label = ttk.Label(status_frame, text="Ready")
         self.status_label.grid(row=0, column=0, pady=5)
@@ -110,6 +123,26 @@ class MainGUI:
             
         except Exception as e:
             messagebox.showerror("Error", f"Failed to start frequency analysis: {str(e)}")
+
+    def select_roi(self):
+        try:
+            camera_idx = int(self.roi_camera_index.get())
+            
+            # Start ROI selector process
+            cmd = [sys.executable, 
+                  os.path.join(os.path.dirname(__file__), "roi_selector.py"),
+                  str(camera_idx)]
+            
+            process = subprocess.Popen(cmd)
+            process.wait()  # Wait for ROI selection to complete
+            
+            # Update status
+            self.status_label.configure(text="ROI selection completed")
+            
+        except ValueError:
+            messagebox.showerror("Error", "Please enter a valid camera index")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to start ROI selection: {str(e)}")
 
     def on_closing(self):
         # Cleanup processes
