@@ -36,8 +36,9 @@ def create_warning_beep():
     t = np.linspace(0, duration, int(sample_rate * duration))
     samples = np.sin(2 * np.pi * frequency * t)
     # Create stereo by duplicating mono signal
-    stereo = np.vstack((samples, samples))
-    scaled = np.int16(stereo.T * 32767)
+    stereo = np.vstack((samples, samples)).T
+    # Ensure array is contiguous and in the correct format
+    scaled = np.ascontiguousarray(stereo * 32767, dtype=np.int16)
     return pygame.sndarray.make_sound(scaled)
 
 # Initialize warning sound
