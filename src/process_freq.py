@@ -120,23 +120,47 @@ def validate_numeric_input(value, min_val=None, max_val=None, param_name="Parame
         print(f"Invalid {param_name}: {str(e)}")
         return False, None
 
-# Store bound lines and fills globally
+# Store bound lines globally
 bound_lines = []
-bound_fills = []
+
+def update_bound_fills(ln, min_freq, max_freq):
+    """Update bound fills for a given line plot"""
+    # Clear existing fills
+    for collection in ln.axes.collections[:]:
+        collection.remove()
+    
+    # Get axes limits
+    xmin, xmax = ln.axes.get_xlim()
+    ymin, ymax = ln.axes.get_ylim()
+    
+    # Get the latest filtered value
+    filtered_data = ln.get_ydata()
+    latest_value = filtered_data[-1] if len(filtered_data) > 0 else None
+    
+    # Add fill based on the latest value
+    if latest_value is not None:
+        if min_freq <= latest_value <= max_freq:
+            # Within bounds (light blue)
+            ln.axes.fill_between([xmin, xmax], min_freq, max_freq, 
+                               color='lightblue', alpha=0.3)
+        elif latest_value > max_freq:
+            # Above bounds (light red)
+            ln.axes.fill_between([xmin, xmax], max_freq, ymax, 
+                               color='lightcoral', alpha=0.3)
+        else:  # latest_value < min_freq
+            # Below bounds (light red)
+            ln.axes.fill_between([xmin, xmax], ymin, min_freq, 
+                               color='lightcoral', alpha=0.3)
 
 def apply_parameters():
     """Apply all parameter changes"""
-    global bound_lines, bound_fills
+    global bound_lines
     
-    # Remove existing bound lines and fills
+    # Remove existing bound lines
     for line in bound_lines:
         if line.axes is not None:  # Check if line still exists
             line.remove()
-    for fill in bound_fills:
-        if fill.axes is not None:  # Check if fill still exists
-            fill.remove()
     bound_lines = []
-    bound_fills = []
     
     # Validate y-axis limits
     valid_ymin, ymin = validate_numeric_input(y_min_entry.get(), param_name="Y-min")
@@ -180,23 +204,8 @@ def apply_parameters():
                 filtered_data = ln.get_ydata()
                 latest_value = filtered_data[-1] if len(filtered_data) > 0 else None
                 
-                # Add fill only for the region containing the latest value
-                if latest_value is not None:
-                    if min_freq <= latest_value <= max_freq:
-                        # Within bounds (light blue)
-                        fill_normal = ln.axes.fill_between([xmin, xmax], min_freq, max_freq, 
-                                                         color='lightblue', alpha=0.3)
-                        bound_fills.append(fill_normal)
-                    elif latest_value > max_freq:
-                        # Above bounds (light red)
-                        fill_above = ln.axes.fill_between([xmin, xmax], max_freq, ymax, 
-                                                        color='lightcoral', alpha=0.3)
-                        bound_fills.append(fill_above)
-                    else:  # latest_value < min_freq
-                        # Below bounds (light red)
-                        fill_below = ln.axes.fill_between([xmin, xmax], ymin, min_freq, 
-                                                        color='lightcoral', alpha=0.3)
-                        bound_fills.append(fill_below)
+                # Update bound fills
+                update_bound_fills(ln, min_freq, max_freq)
         
         # Apply y-axis limits to histograms
         for hist_pair in hist_list:
@@ -381,6 +390,13 @@ while True:
     # Apply parameters if this is the first time
     if len(bound_lines) == 0:
         apply_parameters()
+        
+    # Update bound fills for both full and recent plots
+    _, min_freq = validate_numeric_input(min_freq_entry.get(), min_val=0, param_name="Min frequency")
+    _, max_freq = validate_numeric_input(max_freq_entry.get(), min_val=0, param_name="Max frequency")
+    if min_freq is not None and max_freq is not None:
+        for ln in line_list[i]:
+            update_bound_fills(ln, min_freq, max_freq)
 
     plt.pause(0.1)  # Add small delay and handle GUI events
     root.update()  # Update the tkinter window
