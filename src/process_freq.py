@@ -176,18 +176,27 @@ def apply_parameters():
                 xmin, xmax = ln.axes.get_xlim()
                 ymin, ymax = ln.axes.get_ylim()
                 
-                # Add fills for different regions
-                # Within bounds (light blue)
-                fill_normal = ln.axes.fill_between([xmin, xmax], min_freq, max_freq, 
-                                                 color='lightblue', alpha=0.3)
-                # Above bounds (light red)
-                fill_above = ln.axes.fill_between([xmin, xmax], max_freq, ymax, 
-                                                color='lightcoral', alpha=0.3)
-                # Below bounds (light red)
-                fill_below = ln.axes.fill_between([xmin, xmax], ymin, min_freq, 
-                                                color='lightcoral', alpha=0.3)
+                # Get the latest filtered value
+                filtered_data = ln.get_ydata()
+                latest_value = filtered_data[-1] if len(filtered_data) > 0 else None
                 
-                bound_fills.extend([fill_normal, fill_above, fill_below])
+                # Add fill only for the region containing the latest value
+                if latest_value is not None:
+                    if min_freq <= latest_value <= max_freq:
+                        # Within bounds (light blue)
+                        fill_normal = ln.axes.fill_between([xmin, xmax], min_freq, max_freq, 
+                                                         color='lightblue', alpha=0.3)
+                        bound_fills.append(fill_normal)
+                    elif latest_value > max_freq:
+                        # Above bounds (light red)
+                        fill_above = ln.axes.fill_between([xmin, xmax], max_freq, ymax, 
+                                                        color='lightcoral', alpha=0.3)
+                        bound_fills.append(fill_above)
+                    else:  # latest_value < min_freq
+                        # Below bounds (light red)
+                        fill_below = ln.axes.fill_between([xmin, xmax], ymin, min_freq, 
+                                                        color='lightcoral', alpha=0.3)
+                        bound_fills.append(fill_below)
         
         # Apply y-axis limits to histograms
         for hist_pair in hist_list:
