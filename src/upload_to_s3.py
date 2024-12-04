@@ -27,6 +27,28 @@ def validate_aws_credentials():
             f"Missing required AWS credentials: {', '.join(missing_vars)}"
         )
 
+def delete_bucket_contents(bucket):
+    """Delete all objects in the specified S3 bucket.
+    
+    Args:
+        bucket (str): Bucket name
+    """
+    s3_client = boto3.client('s3')
+    try:
+        # List all objects in the bucket
+        paginator = s3_client.get_paginator('list_objects_v2')
+        for page in paginator.paginate(Bucket=bucket):
+            if 'Contents' in page:
+                objects = [{'Key': obj['Key']} for obj in page['Contents']]
+                s3_client.delete_objects(
+                    Bucket=bucket,
+                    Delete={'Objects': objects}
+                )
+        logger.info(f"Successfully deleted all objects in bucket {bucket}")
+    except ClientError as e:
+        logger.error(e)
+        raise
+
 def upload_file(file_path, bucket, object_name=None):
     """Upload a file to S3 bucket.
     
@@ -67,10 +89,13 @@ def main():
         # Get current timestamp for folder organization
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         
-        # Upload all CSV files in recent_data directory
-        csv_files = glob.glob(os.path.join(recent_data_dir, '*.csv'))
+        # First delete everything in the bucket
+        delete_bucket_contents(bucket_name)
         
-        for file_path in csv_files:
+        # Upload all files in recent_data directory
+        all_files = glob.glob(os.path.join(recent_data_dir, '*'))
+        
+        for file_path in all_files:
             # Create S3 object name with timestamp folder
             file_name = os.path.basename(file_path)
             object_name = f"recent_data/{timestamp}/{file_name}"
