@@ -257,7 +257,7 @@ while True:
         
         # Get recent data window - validate input
         _, time_val = validate_numeric_input(
-            time_window_entry.get(), min_val=0.1, max_val=60, param_name="Time window"
+            time_window_entry.get(), min_val=0.1, max_val=180, param_name="Time window"
         )
         if time_val is None:
             time_val = 5  # Default to 5 minutes if invalid
