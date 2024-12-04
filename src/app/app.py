@@ -159,12 +159,22 @@ else:
             if data is not None and not data.empty:
                 with cols[i]:
                     try:
-                        # Display current frequency
+                        # Display current frequency and delay
                         current_freq = data['freq_filtered'].iloc[-1]
-                        st.metric(
-                            f"Device {device_num} Current Frequency",
-                            f"{current_freq:.1f} RPM"
-                        )
+                        last_time = data['time'].iloc[-1]
+                        delay = (pd.Timestamp.now() - pd.to_datetime(last_time)).total_seconds()
+                        
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.metric(
+                                f"Device {device_num} Current Frequency",
+                                f"{current_freq:.1f} RPM"
+                            )
+                        with col2:
+                            st.metric(
+                                "Delay",
+                                f"{delay:.1f} seconds"
+                            )
                         
                         # Check if frequency is within bounds
                         if bounds is not None and not bounds.empty:
