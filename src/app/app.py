@@ -10,8 +10,10 @@ import threading
 import pygame.mixer
 import pygame
 
-# Initialize pygame mixer
+# Initialize pygame mixer and global variables
 pygame.mixer.init()
+warning_active = False
+warning_thread = None
 
 # Create a simple warning beep
 def create_warning_beep():
@@ -165,14 +167,15 @@ else:
                             freq_out_of_bounds = current_freq < min_freq or current_freq > max_freq
                             if freq_out_of_bounds:
                                 st.error("⚠️ Frequency out of bounds!")
-                                global warning_active, warning_thread
                                 if not warning_active:
+                                    global warning_active, warning_thread
                                     warning_active = True
                                     warning_thread = threading.Thread(target=play_warning_loop)
                                     warning_thread.daemon = True
                                     warning_thread.start()
                             else:
                                 st.success("✅ Frequency within bounds")
+                                global warning_active
                                 warning_active = False
                         
                         # Create and display plot
