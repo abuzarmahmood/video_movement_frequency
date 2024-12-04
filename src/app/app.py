@@ -12,6 +12,8 @@ import pygame
 
 # Initialize pygame mixer and global variables
 pygame.mixer.init()
+
+# Global variables for warning system
 warning_active = False
 warning_thread = None
 
@@ -27,8 +29,6 @@ def create_warning_beep():
 
 # Initialize warning sound
 warning_beep = create_warning_beep()
-warning_active = False
-warning_thread = None
 
 def play_warning_loop():
     global warning_active
@@ -165,17 +165,16 @@ else:
                             min_freq = bounds['min_freq'].iloc[0]
                             max_freq = bounds['max_freq'].iloc[0]
                             freq_out_of_bounds = current_freq < min_freq or current_freq > max_freq
+                            global warning_active, warning_thread
                             if freq_out_of_bounds:
                                 st.error("⚠️ Frequency out of bounds!")
                                 if not warning_active:
-                                    global warning_active, warning_thread
                                     warning_active = True
                                     warning_thread = threading.Thread(target=play_warning_loop)
                                     warning_thread.daemon = True
                                     warning_thread.start()
                             else:
                                 st.success("✅ Frequency within bounds")
-                                global warning_active
                                 warning_active = False
                         
                         # Create and display plot
