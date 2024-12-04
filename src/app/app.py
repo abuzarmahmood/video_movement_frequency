@@ -4,6 +4,7 @@ import numpy as np
 import plotly.graph_objects as go
 from glob import glob
 import os
+import time
 from datetime import datetime, timedelta
 
 st.set_page_config(page_title="Frequency Monitor", layout="wide")
