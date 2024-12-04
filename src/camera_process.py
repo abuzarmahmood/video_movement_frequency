@@ -72,8 +72,15 @@ def get_capture(device_id=0, width=320, height=180):
         cap = cv2.VideoCapture(device_id)
     return cap
 
-def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100, no_overwrite=True, animal_number=None,
-                      roi=None):
+def run_cap_freq_estim(
+        device_id, 
+        artifact_dir, 
+        plot_dir, 
+        n_history=100, 
+        no_overwrite=True, 
+        animal_number=None,
+        roi=None
+        ):
     # Load ROI from file if not explicitly provided
     if roi is None:
         roi = load_roi(device_id)
@@ -122,6 +129,7 @@ def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100, no_over
     counter = 0
     time_stamps = []
     frame_list = []
+    roi_list = []
     max_var_timeseries = []
     fs_list = []
     # If a video input is given, run loop until video ends
@@ -147,6 +155,7 @@ def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100, no_over
             gray_roi = gray[y:y+h, x:x+w]
         else:
             gray_roi = gray
+        roi_list.append(gray_roi)
 
         # Draw ROI rectangle if specified
         if roi is not None:
@@ -172,7 +181,8 @@ def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100, no_over
             # Calculate variance on ROI if specified
             if roi is not None:
                 x, y, w, h = roi
-                frame_array = np.array([f[y:y+h, x:x+w] for f in frame_list[-n_history:]])
+                # frame_array = np.array([f[y:y+h, x:x+w] for f in frame_list[-n_history:]])
+                frame_array = np.array(roi_list[-n_history:])
                 variance = np.var(frame_array, axis=0)
             else:
                 variance = np.var(frame_list[-n_history:], axis=0)
@@ -185,6 +195,10 @@ def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100, no_over
             max_var_pixels = np.unravel_index(
                     np.argsort(var_weights.ravel())[-n_max_var_pixels:], 
                     variance.shape)
+            # If ROI is specified, convert max_var_pixels to full frame coordinates
+            if roi is not None:
+                x, y, w, h = roi
+                max_var_pixels = (max_var_pixels[0] + y, max_var_pixels[1] + x)
             max_var_pixel_vals = np.stack(frame_list[-n_history:], axis=0)[
                 :, max_var_pixels[0], max_var_pixels[1]] 
             max_var_timeseries.append(max_var_pixel_vals)
@@ -238,6 +252,7 @@ class camThread(threading.Thread):
         self.n_history = n_history
         self.no_overwrite = no_overwrite
         self.animal_number = animal_number
+        self.roi = roi
     def run(self):
         print("Starting " + self.previewName)
         # camPreview(self.previewName, self.camID)
