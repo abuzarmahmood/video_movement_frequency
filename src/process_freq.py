@@ -17,8 +17,11 @@ import matplotlib.pyplot as plt
 import tkinter as tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from pprint import pprint as pp
-from playsound import playsound
+from pydub import AudioSegment
+from pydub.playback import play
 import os
+import threading
+import time
 
 # Create the main window
 root = tk.Tk()
@@ -37,7 +40,7 @@ y_min_entry.insert(0, "0")
 tk.Label(control_frame, text="Y-max:").pack(side=tk.LEFT)
 y_max_entry = tk.Entry(control_frame, width=10)
 y_max_entry.pack(side=tk.LEFT)
-y_max_entry.insert(0, "1000")
+y_max_entry.insert(0, "100")
 
 # Add time window control
 tk.Label(control_frame, text="Time Window (min):").pack(side=tk.LEFT)
@@ -55,22 +58,42 @@ median_filter_entry.insert(0, "5")  # Default 5 samples
 use_mean_var = tk.BooleanVar()
 use_mean_checkbox = tk.Checkbutton(control_frame, text="Use Mean Filter", variable=use_mean_var)
 use_mean_checkbox.pack(side=tk.LEFT)
+# Make default true
+use_mean_var.set(True)
 
 # Add frequency bounds controls
 tk.Label(control_frame, text="Min Freq (RPM):").pack(side=tk.LEFT)
 min_freq_entry = tk.Entry(control_frame, width=10)
 min_freq_entry.pack(side=tk.LEFT)
-min_freq_entry.insert(0, "0")
+min_freq_entry.insert(0, "35")
 
 tk.Label(control_frame, text="Max Freq (RPM):").pack(side=tk.LEFT)
 max_freq_entry = tk.Entry(control_frame, width=10)
 max_freq_entry.pack(side=tk.LEFT)
-max_freq_entry.insert(0, "3000")
+max_freq_entry.insert(0, "75")
+
+# Load sound file once at startup
+_warning_sound = AudioSegment.from_wav(os.path.join(os.path.dirname(__file__), "warning.wav"))
+_warning_thread = None
+_is_warning = False
 
 def play_warning():
-    """Play warning sound"""
-    sound_file = os.path.join(os.path.dirname(__file__), "warning.wav")
-    playsound(sound_file, block=False)
+    """Play warning sound in a separate thread"""
+    global _warning_thread, _is_warning
+    if not _is_warning:
+        _is_warning = True
+        def _play():
+            global _is_warning
+            while _is_warning:
+                play(_warning_sound)
+                time.sleep(1)
+        _warning_thread = threading.Thread(target=_play, daemon=True)
+        _warning_thread.start()
+
+def stop_warning():
+    """Stop the warning sound"""
+    global _is_warning
+    _is_warning = False
 
 def apply_filter(data, window_length, use_mean=False):
     """Apply median or mean filter to data where current value is last in window"""
@@ -185,7 +208,7 @@ for i, freq in enumerate(freq_data):
     freq_vals = freq['freq'].values
     # Convert from Hz to RPM
     freq_vals = freq_vals * 60
-    fig, ax = plt.subplots(2, 2, figsize=(12, 8))
+    fig, ax = plt.subplots(2, 2, figsize=(8, 4))
     # Format time values to be more readable
     time_vals = freq['time'].astype('datetime64[s]').values
     # Full time series plot
@@ -234,7 +257,7 @@ while True:
         
         # Get recent data window - validate input
         _, time_val = validate_numeric_input(
-            time_window_entry.get(), min_val=0.1, max_val=60, param_name="Time window"
+            time_window_entry.get(), min_val=0.1, max_val=180, param_name="Time window"
         )
         if time_val is None:
             time_val = 5  # Default to 5 minutes if invalid
@@ -262,10 +285,12 @@ while True:
         _, min_freq = validate_numeric_input(min_freq_entry.get(), min_val=0, param_name="Min frequency")
         _, max_freq = validate_numeric_input(max_freq_entry.get(), min_val=0, param_name="Max frequency")
         
-        # Check if filtered values exceed bounds and play warning if they do
+        # Check if filtered values exceed bounds and play/stop warning accordingly
         if min_freq is not None and max_freq is not None:
             if (filtered_vals[-1] < min_freq) | (filtered_vals[-1] > max_freq):
                 play_warning()
+            else:
+                stop_warning()
         
         # Plot both raw and filtered data
         line_list[i][0][0].set_data(time_vals, freq_vals)
@@ -315,5 +340,9 @@ while True:
             ln[0].axes.relim()
             ln[0].axes.autoscale_view()
         
+    # Apply parameters if this is the first time
+    if len(bound_lines) == 0:
+        apply_parameters()
+
     plt.pause(0.1)  # Add small delay and handle GUI events
     root.update()  # Update the tkinter window
