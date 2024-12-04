@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import json
 from time import sleep, time
 from datetime import datetime
 import argparse
@@ -39,6 +40,15 @@ def calc_freq(data, fs):
     return peak_freq
 
 
+def load_roi(device_id):
+    """Load ROI coordinates from JSON file if it exists"""
+    roi_file = os.path.join(artifact_dir, f"roi_device_{device_id}.json")
+    if os.path.exists(roi_file):
+        with open(roi_file, 'r') as f:
+            roi_data = json.load(f)
+            return roi_data['roi']
+    return None
+
 def get_capture(device_id=0, width=320, height=180):
     """
     Get capture object for camera
@@ -64,6 +74,11 @@ def get_capture(device_id=0, width=320, height=180):
 
 def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100, no_overwrite=True, animal_number=None,
                       roi=None):
+    # Load ROI from file if not explicitly provided
+    if roi is None:
+        roi = load_roi(device_id)
+        if roi:
+            print(f"Loaded ROI from file: {roi}")
     """
     Run camera frequency estimation
     
