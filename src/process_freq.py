@@ -120,18 +120,23 @@ def validate_numeric_input(value, min_val=None, max_val=None, param_name="Parame
         print(f"Invalid {param_name}: {str(e)}")
         return False, None
 
-# Store bound lines globally
+# Store bound lines and fills globally
 bound_lines = []
+bound_fills = []
 
 def apply_parameters():
     """Apply all parameter changes"""
-    global bound_lines
+    global bound_lines, bound_fills
     
-    # Remove existing bound lines
+    # Remove existing bound lines and fills
     for line in bound_lines:
         if line.axes is not None:  # Check if line still exists
             line.remove()
+    for fill in bound_fills:
+        if fill.axes is not None:  # Check if fill still exists
+            fill.remove()
     bound_lines = []
+    bound_fills = []
     
     # Validate y-axis limits
     valid_ymin, ymin = validate_numeric_input(y_min_entry.get(), param_name="Y-min")
@@ -160,13 +165,29 @@ def apply_parameters():
         for ln in np.array(line_list).flatten():
             ln.axes.set_ylim(ymin, ymax)
             
-            # Add new bound lines
-            if valid_min_freq:
-                line = ln.axes.axhline(y=min_freq, color='r', linestyle='--', label='Bound Min')
-                bound_lines.append(line)
-            if valid_max_freq:
-                line = ln.axes.axhline(y=max_freq, color='r', linestyle='--', label='Bound Max')
-                bound_lines.append(line)
+            # Add new bound lines and fills
+            if valid_min_freq and valid_max_freq:
+                # Add bound lines
+                min_line = ln.axes.axhline(y=min_freq, color='r', linestyle='--', label='Bound Min')
+                max_line = ln.axes.axhline(y=max_freq, color='r', linestyle='--', label='Bound Max')
+                bound_lines.extend([min_line, max_line])
+                
+                # Get axes limits
+                xmin, xmax = ln.axes.get_xlim()
+                ymin, ymax = ln.axes.get_ylim()
+                
+                # Add fills for different regions
+                # Within bounds (light blue)
+                fill_normal = ln.axes.fill_between([xmin, xmax], min_freq, max_freq, 
+                                                 color='lightblue', alpha=0.3)
+                # Above bounds (light red)
+                fill_above = ln.axes.fill_between([xmin, xmax], max_freq, ymax, 
+                                                color='lightcoral', alpha=0.3)
+                # Below bounds (light red)
+                fill_below = ln.axes.fill_between([xmin, xmax], ymin, min_freq, 
+                                                color='lightcoral', alpha=0.3)
+                
+                bound_fills.extend([fill_normal, fill_above, fill_below])
         
         # Apply y-axis limits to histograms
         for hist_pair in hist_list:
