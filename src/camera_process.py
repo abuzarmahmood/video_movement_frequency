@@ -195,11 +195,7 @@ def run_cap_freq_estim(device_id, artifact_dir, plot_dir, n_history=100, no_over
 ############################################################
 
 class camThread(threading.Thread):
-<<<<<<< HEAD
-    def __init__(self, previewName, camID, n_history=100, no_overwrite=True):
-=======
-    def __init__(self, previewName, camID, n_history=3, no_overwrite=True, animal_number=None):
->>>>>>> 7830dbb (feat: Add optional animal_number argument for customizing output filenames)
+    def __init__(self, previewName, camID, n_history=100, no_overwrite=True, animal_number=None):
         threading.Thread.__init__(self)
         self.previewName = previewName
         self.camID = camID
