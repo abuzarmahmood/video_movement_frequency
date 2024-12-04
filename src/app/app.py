@@ -162,10 +162,10 @@ else:
                         
                         # Check if frequency is within bounds
                         if bounds is not None and not bounds.empty:
+                            global warning_active, warning_thread
                             min_freq = bounds['min_freq'].iloc[0]
                             max_freq = bounds['max_freq'].iloc[0]
                             freq_out_of_bounds = current_freq < min_freq or current_freq > max_freq
-                            global warning_active, warning_thread
                             if freq_out_of_bounds:
                                 st.error("⚠️ Frequency out of bounds!")
                                 if not warning_active:
