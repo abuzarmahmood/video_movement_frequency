@@ -8,3 +8,4 @@ pandas
 pydub
 streamlit
 plotly
+pygame
