@@ -14,6 +14,7 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.dates import DateFormatter
 import tkinter as tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from pprint import pprint as pp
@@ -212,24 +213,22 @@ for i, freq in enumerate(freq_data):
     # Format time values to be more readable
     time_vals = freq['time'].astype('datetime64[s]').values
     # Full time series plot
-    sc = ax[0,0].scatter(time_vals, freq_vals) 
-    ln = ax[0,0].plot(time_vals, freq_vals)
+    ln = ax[0,0].plot(time_vals, freq_vals, '-o', label='Raw', color='b')
     ax[0,0].set_title(f"Full freq data for device {i}")
-    ax[0,0].set_xlabel('Time (s)')
+    ax[0,0].set_xlabel('Time')
     ax[0,0].set_ylabel('Frequency (RPM)')
     ax[0,0].tick_params(axis='x', rotation=45)
     ax[0,0].xaxis.set_major_locator(plt.MaxNLocator(6))
-    ax[0,0].xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
+    ax[0,0].xaxis.set_major_formatter(DateFormatter('%H:%M:%S'))
 
     # Recent time series plot
-    sc_recent = ax[0,1].scatter(time_vals, freq_vals)
-    ln_recent = ax[0,1].plot(time_vals, freq_vals)
+    ln_recent = ax[0,1].plot(time_vals, freq_vals, '-o', label='Raw', color='b') 
     ax[0,1].set_title(f"Recent freq data for device {i}")
-    ax[0,1].set_xlabel('Time (s)')
+    ax[0,1].set_xlabel('Time')
     ax[0,1].set_ylabel('Frequency (RPM)')
     ax[0,1].tick_params(axis='x', rotation=45)
     ax[0,1].xaxis.set_major_locator(plt.MaxNLocator(6))
-    ax[0,1].xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
+    ax[0,1].xaxis.set_major_formatter(DateFormatter('%H:%M:%S'))
 
     # Full histogram
     ax[1,0].hist(freq_vals, bins=20, orientation='horizontal')
@@ -240,8 +239,7 @@ for i, freq in enumerate(freq_data):
     ax[1,1].hist(freq_vals, bins=20, orientation='horizontal')
     ax[1,1].set_title(f"Recent histogram for device {i}")
     ax[1,1].set_xlabel('Count')
-    scatter_list.append((sc, sc_recent))
-    line_list.append([ln, ln_recent])
+    line_list.append([ln[0], ln_recent[0]])
     hist_list.append((ax[1,0], ax[1,1]))  # Store both histogram axes
     plt.tight_layout()
 
@@ -270,8 +268,8 @@ while True:
 
         # Update full time series
         # Convert time_vals to same dtype as freq_vals
-        time_vals = np.float64(time_vals)
-        scatter_list[i][0].set_offsets(np.c_[time_vals, freq_vals])
+        # time_vals = np.float64(time_vals)
+        line_list[i][0].set_data(time_vals, freq_vals)
         
         # Apply median filter to full series
         _, filter_length = validate_numeric_input(
@@ -293,35 +291,45 @@ while True:
                 stop_warning()
         
         # Plot both raw and filtered data
-        line_list[i][0][0].set_data(time_vals, freq_vals)
+        line_list[i][0].set_data(time_vals, freq_vals)
         
-        if len(line_list[i][0]) > 1:
-            line_list[i][0][1].set_data(time_vals, filtered_vals)
+        # Get the axes object from the first line
+        ax = line_list[i][0].axes
+        
+        # Check if we already have a filtered line plotted
+        if len(ax.lines) > 1:
+            ax.lines[1].set_data(time_vals, filtered_vals)
         else:
-            filtered_line = line_list[i][0][0].axes.plot(time_vals, filtered_vals, 'r-', label='Filtered')[0]
-            line_list[i][0] = [line_list[i][0][0], filtered_line]
-            line_list[i][0][0].axes.legend()
-        line_list[i][0][0].axes.xaxis.set_major_locator(plt.MaxNLocator(6))
-        line_list[i][0][0].axes.xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
+            filtered_line = ax.plot(time_vals, filtered_vals, 'r-', label='Filtered')[0]
+            ax.legend()
+        
+        ax.xaxis.set_major_locator(plt.MaxNLocator(6))
+        ax.xaxis.set_major_formatter(DateFormatter('%H:%M:%S'))
+        ax.tick_params(axis='x', rotation=45)
         
         # Update recent time series
-        recent_times = np.float64(recent_times)
-        scatter_list[i][1].set_offsets(np.c_[recent_times, recent_freqs])
+        # recent_times = np.float64(recent_times)
+        line_list[i][1].set_data(recent_times, recent_freqs)
         
         # Apply median filter to recent series
         filtered_recent = apply_filter(recent_freqs, filter_length, use_mean_var.get())
         
         # Plot both raw and filtered recent data
-        line_list[i][1][0].set_data(recent_times, recent_freqs)
+        line_list[i][1].set_data(recent_times, recent_freqs)
         
-        if len(line_list[i][1]) > 1:
-            line_list[i][1][1].set_data(recent_times, filtered_recent)
+        # Get the axes object from the recent line
+        ax_recent = line_list[i][1].axes
+        
+        # Check if we already have a filtered line plotted
+        if len(ax_recent.lines) > 1:
+            ax_recent.lines[1].set_data(recent_times, filtered_recent)
         else:
-            filtered_line = line_list[i][1][0].axes.plot(recent_times, filtered_recent, 'r-', label='Filtered')[0]
-            line_list[i][1] = [line_list[i][1][0], filtered_line]
-            line_list[i][1][0].axes.legend()
-        line_list[i][1][0].axes.xaxis.set_major_locator(plt.MaxNLocator(6))
-        line_list[i][1][0].axes.xaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
+            filtered_line = ax_recent.plot(recent_times, filtered_recent, 'r-', label='Filtered')[0]
+            ax_recent.legend()
+        
+        ax_recent.xaxis.set_major_locator(plt.MaxNLocator(6))
+        ax_recent.xaxis.set_major_formatter(DateFormatter('%H:%M:%S'))
+        ax_recent.tick_params(axis='x', rotation=45)
         
         # Update full histogram
         hist_list[i][0].clear()
@@ -337,8 +345,8 @@ while True:
         
         # Update axis limits
         for ln in line_list[i]:
-            ln[0].axes.relim()
-            ln[0].axes.autoscale_view()
+            ln.axes.relim()
+            ln.axes.autoscale_view()
         
     # Apply parameters if this is the first time
     if len(bound_lines) == 0:
