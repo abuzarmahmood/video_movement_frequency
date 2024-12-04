@@ -79,13 +79,9 @@ def run_cap_freq_estim(
         n_history=100, 
         no_overwrite=True, 
         animal_number=None,
-        roi=None
+        roi=None,
+        use_roi=False
         ):
-    # Only load ROI from file if --use-roi flag is given and no explicit ROI provided
-    if roi is None and 'use_roi' in sys.argv:
-        roi = load_roi(device_id)
-        if roi:
-            print(f"Loaded ROI from file: {roi}")
     """
     Run camera frequency estimation
     
@@ -104,6 +100,16 @@ def run_cap_freq_estim(
     roi : tuple, optional
         Region of interest (x, y, width, height) to analyze. If None, use full frame.
     """
+    # Only load ROI from file if --use-roi flag is given and no explicit ROI provided
+    if roi is not None:
+        print(f"Using given ROI: {roi}")
+    if roi is None and use_roi: 
+        print(f'Using ROI from file for device {device_id}')
+        roi = load_roi(device_id)
+        if roi is not None:
+            print(f"Loaded ROI from file: {roi}")
+        else:
+            print("No ROI found in file... Using full frame.")
     cap = get_capture(
             device_id=device_id, 
             width=320, 
@@ -245,7 +251,16 @@ def run_cap_freq_estim(
 ############################################################
 
 class camThread(threading.Thread):
-    def __init__(self, previewName, camID, n_history=100, no_overwrite=True, animal_number=None, roi=None):
+    def __init__(
+            self, 
+            previewName, 
+            camID, 
+            n_history=100, 
+            no_overwrite=True, 
+            animal_number=None, 
+            roi=None,
+            use_roi=False
+            ):
         threading.Thread.__init__(self)
         self.previewName = previewName
         self.camID = camID
@@ -253,6 +268,8 @@ class camThread(threading.Thread):
         self.no_overwrite = no_overwrite
         self.animal_number = animal_number
         self.roi = roi
+        self.use_roi = use_roi
+
     def run(self):
         print("Starting " + self.previewName)
         # camPreview(self.previewName, self.camID)
@@ -260,7 +277,10 @@ class camThread(threading.Thread):
                           n_history=self.n_history,
                           no_overwrite=self.no_overwrite,
                           animal_number=self.animal_number,
-                          roi=self.roi)
+                          roi=self.roi,
+                          use_roi=self.use_roi
+                           )
+
 
 
 if __name__ == '__main__':
@@ -283,7 +303,9 @@ if __name__ == '__main__':
                        n_history=args.n_history,
                        no_overwrite=args.no_overwrite,
                        animal_number=args.animal_number,
-                       roi=args.roi if args.roi else None)
+                       roi=args.roi if args.roi else None,
+                       use_roi=args.use_roi,
+                        )
     # thread1.run_cap_freq_estim = lambda: run_cap_freq_estim(
     #     args.camera_index, 
     #     artifact_dir, 
