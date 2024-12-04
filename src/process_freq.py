@@ -400,6 +400,17 @@ while True:
             index=False
         )
         
+        # Write frequency bounds to file
+        if min_freq is not None and max_freq is not None:
+            bounds_data = pd.DataFrame({
+                'min_freq': [min_freq],
+                'max_freq': [max_freq]
+            })
+            bounds_data.to_csv(
+                os.path.join(recent_data_dir, f'freq_bounds_device_{i}.csv'),
+                index=False
+            )
+        
         # Update axis limits
         for ln in line_list[i]:
             ln.axes.relim()
