@@ -193,8 +193,6 @@ else:
                             if freq_out_of_bounds:
                                 st.error("⚠️ Frequency out of bounds!")
                                 if not warning_active:
-                                    # Stop any existing thread
-                                    cleanup()
                                     # Start new warning
                                     warning_active = True
                                     warning_thread = threading.Thread(target=play_warning_loop)
@@ -202,7 +200,8 @@ else:
                                     warning_thread.start()
                             else:
                                 st.success("✅ Frequency within bounds")
-                                cleanup()
+                                if warning_active:
+                                    cleanup()  # Stop warning when back in bounds
                         
                         # Create and display plot
                         fig = create_plot(data, bounds, device_num)
