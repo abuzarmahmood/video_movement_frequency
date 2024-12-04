@@ -81,8 +81,8 @@ def run_cap_freq_estim(
         animal_number=None,
         roi=None
         ):
-    # Load ROI from file if not explicitly provided
-    if roi is None:
+    # Only load ROI from file if --use-roi flag is given and no explicit ROI provided
+    if roi is None and 'use_roi' in sys.argv:
         roi = load_roi(device_id)
         if roi:
             print(f"Loaded ROI from file: {roi}")
@@ -270,6 +270,8 @@ if __name__ == '__main__':
                       help='Number of frames to use for frequency estimation (default: 100)')
     parser.add_argument('--no-overwrite', action='store_true', help='Do not overwrite existing files')
     parser.add_argument('--animal-number', type=int, help='Animal number to use in output filename')
+    parser.add_argument('--use-roi', action='store_true',
+                      help='Use ROI from saved file')
     parser.add_argument('--roi', type=int, nargs=4, 
                       metavar=('x', 'y', 'width', 'height'),
                       help='Region of interest (x y width height)')
@@ -281,7 +283,7 @@ if __name__ == '__main__':
                        n_history=args.n_history,
                        no_overwrite=args.no_overwrite,
                        animal_number=args.animal_number,
-                       roi=args.roi)
+                       roi=args.roi if args.roi else None)
     # thread1.run_cap_freq_estim = lambda: run_cap_freq_estim(
     #     args.camera_index, 
     #     artifact_dir, 
