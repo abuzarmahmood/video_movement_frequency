@@ -9,6 +9,9 @@ import threading
 import atexit
 import pygame.mixer
 import pygame
+import boto3
+import io
+from botocore.exceptions import ClientError
 
 # Initialize pygame mixer and global variables
 pygame.mixer.init()
@@ -34,12 +37,77 @@ warning_beep = create_warning_beep()
 st.set_page_config(page_title="Frequency Monitor", layout="wide")
 st.title("Real-time Frequency Monitoring")
 
+# AWS Configuration
+st.sidebar.header("Data Source Configuration")
+use_s3 = st.sidebar.checkbox("Use AWS S3")
+
+if use_s3:
+    aws_access_key = st.sidebar.text_input("AWS Access Key ID", type="password")
+    aws_secret_key = st.sidebar.text_input("AWS Secret Access Key", type="password")
+    s3_bucket = st.sidebar.text_input("S3 Bucket Name")
+    s3_prefix = st.sidebar.text_input("S3 Prefix (folder path)", value="recent_data/")
+
 # Get data directory
 base_dir = '/home/abuzarmahmood/projects/video_movement_frequency'
 recent_data_dir = os.path.join(base_dir, 'artifacts', 'recent_data')
 
+def get_s3_client():
+    """Create and return an S3 client using provided credentials"""
+    if not (aws_access_key and aws_secret_key):
+        st.error("AWS credentials are required when using S3")
+        return None
+    
+    try:
+        s3_client = boto3.client(
+            's3',
+            aws_access_key_id=aws_access_key,
+            aws_secret_access_key=aws_secret_key
+        )
+        return s3_client
+    except Exception as e:
+        st.error(f"Failed to create S3 client: {str(e)}")
+        return None
+
+def load_s3_data(device_num):
+    """Load data from S3 bucket"""
+    s3_client = get_s3_client()
+    if not s3_client:
+        return None, None
+    
+    try:
+        # Construct S3 paths
+        data_key = f"{s3_prefix.rstrip('/')}recent_data_device_{device_num}.csv"
+        bounds_key = f"{s3_prefix.rstrip('/')}freq_bounds_device_{device_num}.csv"
+        
+        # Get data file
+        response = s3_client.get_object(Bucket=s3_bucket, Key=data_key)
+        data = pd.read_csv(io.BytesIO(response['Body'].read()))
+        data['time'] = pd.to_datetime(data['time'])
+        
+        # Try to get bounds file
+        try:
+            bounds_response = s3_client.get_object(Bucket=s3_bucket, Key=bounds_key)
+            bounds = pd.read_csv(io.BytesIO(bounds_response['Body'].read()))
+        except ClientError:
+            bounds = None
+            
+        return data, bounds
+        
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'NoSuchKey':
+            return None, None
+        else:
+            st.error(f"Error accessing S3: {str(e)}")
+            return None, None
+    except Exception as e:
+        st.error(f"Error loading S3 data: {str(e)}")
+        return None, None
+
 # Function to load and process data
 def load_data(device_num):
+    if use_s3:
+        return load_s3_data(device_num)
+    
     try:
         recent_data_file = os.path.join(recent_data_dir, f'recent_data_device_{device_num}.csv')
         bounds_file = os.path.join(recent_data_dir, f'freq_bounds_device_{device_num}.csv')
@@ -142,8 +210,24 @@ refresh_interval = st.sidebar.slider(
 )
 
 # Get available devices
-device_files = glob(os.path.join(recent_data_dir, 'recent_data_device_*.csv'))
-device_numbers = [int(f.split('_')[-1].split('.')[0]) for f in device_files]
+if use_s3:
+    s3_client = get_s3_client()
+    if s3_client:
+        try:
+            response = s3_client.list_objects_v2(
+                Bucket=s3_bucket,
+                Prefix=f"{s3_prefix.rstrip('/')}/recent_data_device_"
+            )
+            device_files = [obj['Key'] for obj in response.get('Contents', [])]
+            device_numbers = [int(f.split('_')[-1].split('.')[0]) for f in device_files]
+        except Exception as e:
+            st.error(f"Error listing S3 objects: {str(e)}")
+            device_numbers = []
+    else:
+        device_numbers = []
+else:
+    device_files = glob(os.path.join(recent_data_dir, 'recent_data_device_*.csv'))
+    device_numbers = [int(f.split('_')[-1].split('.')[0]) for f in device_files]
 
 if not device_numbers:
     st.warning("No device data found in the recent data directory.")
