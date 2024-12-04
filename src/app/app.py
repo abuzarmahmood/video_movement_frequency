@@ -157,7 +157,7 @@ refresh_interval = st.sidebar.slider(
     "Refresh Interval (seconds)",
     min_value=1,
     max_value=60,
-    value=5
+    value=1
 )
 
 # Get available devices
