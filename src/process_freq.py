@@ -123,6 +123,35 @@ def validate_numeric_input(value, min_val=None, max_val=None, param_name="Parame
 # Store bound lines globally
 bound_lines = []
 
+def update_bound_fills(ln, min_freq, max_freq):
+    """Update bound fills for a given line plot"""
+    # Clear existing fills
+    for collection in ln.axes.collections[:]:
+        collection.remove()
+    
+    # Get axes limits
+    xmin, xmax = ln.axes.get_xlim()
+    ymin, ymax = ln.axes.get_ylim()
+    
+    # Get the latest filtered value
+    filtered_data = ln.get_ydata()
+    latest_value = filtered_data[-1] if len(filtered_data) > 0 else None
+    
+    # Add fill based on the latest value
+    if latest_value is not None:
+        if min_freq <= latest_value <= max_freq:
+            # Within bounds (light blue)
+            ln.axes.fill_between([xmin, xmax], min_freq, max_freq, 
+                               color='lightblue', alpha=0.7)
+        elif latest_value > max_freq:
+            # Above bounds (light red)
+            ln.axes.fill_between([xmin, xmax], max_freq, ymax, 
+                               color='lightcoral', alpha=0.7)
+        else:  # latest_value < min_freq
+            # Below bounds (light red)
+            ln.axes.fill_between([xmin, xmax], ymin, min_freq, 
+                               color='lightcoral', alpha=0.7)
+
 def apply_parameters():
     """Apply all parameter changes"""
     global bound_lines
@@ -160,13 +189,23 @@ def apply_parameters():
         for ln in np.array(line_list).flatten():
             ln.axes.set_ylim(ymin, ymax)
             
-            # Add new bound lines
-            if valid_min_freq:
-                line = ln.axes.axhline(y=min_freq, color='r', linestyle='--', label='Bound Min')
-                bound_lines.append(line)
-            if valid_max_freq:
-                line = ln.axes.axhline(y=max_freq, color='r', linestyle='--', label='Bound Max')
-                bound_lines.append(line)
+            # Add new bound lines and fills
+            if valid_min_freq and valid_max_freq:
+                # Add bound lines
+                min_line = ln.axes.axhline(y=min_freq, color='r', linestyle='--', label='Bound Min')
+                max_line = ln.axes.axhline(y=max_freq, color='r', linestyle='--', label='Bound Max')
+                bound_lines.extend([min_line, max_line])
+                
+                # Get axes limits
+                xmin, xmax = ln.axes.get_xlim()
+                ymin, ymax = ln.axes.get_ylim()
+                
+                # Get the latest filtered value
+                filtered_data = ln.get_ydata()
+                latest_value = filtered_data[-1] if len(filtered_data) > 0 else None
+                
+                # Update bound fills
+                update_bound_fills(ln, min_freq, max_freq)
         
         # Apply y-axis limits to histograms
         for hist_pair in hist_list:
@@ -205,6 +244,7 @@ for i, freq in enumerate(freq_data):
 scatter_list = []
 line_list = []
 hist_list = []
+filtered_line_list = []
 for i, freq in enumerate(freq_data):
     freq_vals = freq['freq'].values
     # Convert from Hz to RPM
@@ -242,6 +282,8 @@ for i, freq in enumerate(freq_data):
     line_list.append([ln[0], ln_recent[0]])
     hist_list.append((ax[1,0], ax[1,1]))  # Store both histogram axes
     plt.tight_layout()
+
+    filtered_line_list.append([None, None])
 
 # Load end of file and update plots continuously
 while True:
@@ -301,6 +343,7 @@ while True:
             ax.lines[1].set_data(time_vals, filtered_vals)
         else:
             filtered_line = ax.plot(time_vals, filtered_vals, 'r-', label='Filtered')[0]
+            filtered_line_list[i][0] = filtered_line
             ax.legend()
         
         ax.xaxis.set_major_locator(plt.MaxNLocator(6))
@@ -325,6 +368,7 @@ while True:
             ax_recent.lines[1].set_data(recent_times, filtered_recent)
         else:
             filtered_line = ax_recent.plot(recent_times, filtered_recent, 'r-', label='Filtered')[0]
+            filtered_line_list[i][1] = filtered_line
             ax_recent.legend()
         
         ax_recent.xaxis.set_major_locator(plt.MaxNLocator(6))
@@ -347,10 +391,18 @@ while True:
         for ln in line_list[i]:
             ln.axes.relim()
             ln.axes.autoscale_view()
+
+        # Update bound fills for both full and recent plots
+        _, min_freq = validate_numeric_input(min_freq_entry.get(), min_val=0, param_name="Min frequency")
+        _, max_freq = validate_numeric_input(max_freq_entry.get(), min_val=0, param_name="Max frequency")
+        if min_freq is not None and max_freq is not None:
+            for ln in filtered_line_list[i]: 
+                update_bound_fills(ln, min_freq, max_freq)
         
     # Apply parameters if this is the first time
     if len(bound_lines) == 0:
         apply_parameters()
+        
 
     plt.pause(0.1)  # Add small delay and handle GUI events
     root.update()  # Update the tkinter window
