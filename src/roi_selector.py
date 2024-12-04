@@ -75,8 +75,8 @@ def save_roi(roi_coords, device_id):
 
 def main():
     parser = argparse.ArgumentParser(description='Select ROI for camera')
-    parser.add_argument('--device-id', type=int, default=0,
-                      help='Camera device index (default: 0)')
+    parser.add_argument('device_id', type=int,
+                      help='Camera device index')
     args = parser.parse_args()
 
     selector = ROISelector(args.device_id)
