@@ -5,8 +5,8 @@ import plotly.graph_objects as go
 from glob import glob
 import os
 import time
-from datetime import datetime, timedelta
 import threading
+import atexit
 import pygame.mixer
 import pygame
 
@@ -16,6 +16,16 @@ pygame.mixer.init()
 # Global variables for warning system
 warning_active = False
 warning_thread = None
+
+def cleanup():
+    """Cleanup function to stop warning thread"""
+    global warning_active
+    warning_active = False
+    if warning_thread is not None and warning_thread.is_alive():
+        warning_thread.join(timeout=1.0)
+
+# Register cleanup function
+atexit.register(cleanup)
 
 # Create a simple warning beep
 def create_warning_beep():
@@ -169,13 +179,16 @@ else:
                             if freq_out_of_bounds:
                                 st.error("⚠️ Frequency out of bounds!")
                                 if not warning_active:
+                                    # Stop any existing thread
+                                    cleanup()
+                                    # Start new warning
                                     warning_active = True
                                     warning_thread = threading.Thread(target=play_warning_loop)
                                     warning_thread.daemon = True
                                     warning_thread.start()
                             else:
                                 st.success("✅ Frequency within bounds")
-                                warning_active = False
+                                cleanup()
                         
                         # Create and display plot
                         fig = create_plot(data, bounds, device_num)
