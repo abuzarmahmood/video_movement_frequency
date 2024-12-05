@@ -1,4 +1,4 @@
-.PHONY: setup clean test format
+.PHONY: setup clean 
 
 VENV = venv
 PYTHON = $(VENV)/bin/python
@@ -13,21 +13,12 @@ $(VENV)/bin/activate:
 install-requirements: $(VENV)/bin/activate
 	$(PIP) install -r requirements.txt
 
-install-dev-requirements: $(VENV)/bin/activate
-	$(PIP) install -r requirements-dev.txt
-
 install-packages:
 	@for pkg in $$(cat packages.txt); do \
 		if ! dpkg -l $$pkg >/dev/null 2>&1; then \
 			sudo apt-get install -y $$pkg; \
 		fi \
 	done
-
-test: $(VENV)/bin/activate
-	$(PYTHON) -m pytest
-
-format: $(VENV)/bin/activate
-	$(PYTHON) -m black src/
 
 clean:
 	rm -rf $(VENV)
