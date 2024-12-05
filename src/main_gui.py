@@ -70,6 +70,16 @@ class MainGUI:
         ttk.Label(camera_frame, text="Animal Number:").grid(row=2, column=0, padx=5, pady=5)
         animal_number = ttk.Entry(camera_frame, width=10)
         animal_number.grid(row=2, column=1, padx=5, pady=5)
+
+        # Add radio buttons for camera options
+        options_frame = ttk.LabelFrame(camera_frame, text="Options", padding="5")
+        options_frame.grid(row=3, column=0, columnspan=2, padx=5, pady=5, sticky=(tk.W, tk.E))
+        
+        roi_var = tk.StringVar(value="none")
+        ttk.Radiobutton(options_frame, text="No ROI", 
+                       variable=roi_var, value="none").grid(row=0, column=0, padx=5)
+        ttk.Radiobutton(options_frame, text="Use Saved ROI", 
+                       variable=roi_var, value="saved").grid(row=0, column=1, padx=5)
         
         camera_button = ttk.Button(
             camera_frame, 
@@ -105,6 +115,11 @@ class MainGUI:
                     except ValueError:
                         messagebox.showerror("Error", "Animal number must be a valid integer")
                         return
+
+                # Add ROI options
+                roi_option = roi_var.get()
+                if roi_option == "saved":
+                    cmd.append("--use-roi")
                 
                 self.camera_states[cam_id]["process"] = subprocess.Popen(cmd)
                 self.camera_states[cam_id]["running"] = True
