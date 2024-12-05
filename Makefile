@@ -24,7 +24,7 @@ make-executable:
 	@echo "Making Python files executable..."
 	@for file in src/*.py; do \
 		if ! grep -q '^#!' "$$file"; then \
-			echo '#!/usr/bin/env python3' | cat - "$$file" > temp && mv temp "$$file"; \
+			echo '#!/usr/bin/env venv/bin/python3' | cat - "$$file" > temp && mv temp "$$file"; \
 		fi; \
 		chmod +x "$$file"; \
 	done
