@@ -1,4 +1,3 @@
-#!/usr/bin/env venv/bin/python3
 import tkinter as tk
 from tkinter import ttk, messagebox
 import subprocess

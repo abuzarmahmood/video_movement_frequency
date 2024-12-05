@@ -1,10 +1,11 @@
 .PHONY: setup clean make-executable
 
+SHELL := /bin/bash
 VENV = venv
 PYTHON = $(VENV)/bin/python
 PIP = $(VENV)/bin/pip
 
-setup: $(VENV)/bin/activate install-packages install-requirements install-dev-requirements
+setup: $(VENV)/bin/activate install-packages install-requirements 
 
 $(VENV)/bin/activate:
 	python3 -m venv $(VENV)
@@ -24,7 +25,7 @@ make-executable:
 	@echo "Making Python files executable..."
 	@for file in src/*.py; do \
 		if ! grep -q '^#!' "$$file"; then \
-			echo '#!$(CURDIR)/venv/bin/python3' | cat - "$$file" > temp && mv temp "$$file"; \
+			echo '#!$(CURDIR)/$(VENV)/bin/python3' | cat - "$$file" > temp && mv temp "$$file"; \
 		fi; \
 		chmod +x "$$file"; \
 	done
