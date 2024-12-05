@@ -223,12 +223,16 @@ apply_button.pack(side=tk.LEFT, padx=5)
 plt.ion()
 
 script_path = os.path.realpath(__file__)
-base_dir = os.path.dirname(script_path)
-base_dir = '/home/abuzarmahmood/projects/video_movement_frequency'
+src_dir = os.path.dirname(script_path)
+base_dir = os.path.dirname(src_dir)
 artifact_dir = os.path.join(base_dir, 'artifacts')
 
 # Get all files in artifact_dir
 freq_files = glob(os.path.join(artifact_dir, 'freq_data_device*.csv'))
+print(f'Artifact directory: {artifact_dir}')
+print('Frequency files:')
+pp(freq_files)
+print()
 
 ##############################
 # Load freq data

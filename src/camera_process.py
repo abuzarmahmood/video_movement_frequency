@@ -14,11 +14,12 @@ import threading
 import sys
 from functools import partial
 
-# base_dir = '/home/abuzarmahmood/projects/video_movement_frequency'
 script_path = os.path.realpath(__file__)
 base_dir = os.path.dirname(os.path.dirname(script_path))
-plot_dir = os.path.join(base_dir, 'plots')
 artifact_dir = os.path.join(base_dir, 'artifacts')
+if not os.path.exists(artifact_dir):
+    os.makedirs(artifact_dir)
+
 
 
 def calc_freq(data, fs):
@@ -75,7 +76,6 @@ def get_capture(device_id=0, width=320, height=180):
 def run_cap_freq_estim(
         device_id, 
         artifact_dir, 
-        plot_dir, 
         n_history=100, 
         no_overwrite=True, 
         animal_number=None,
@@ -91,8 +91,6 @@ def run_cap_freq_estim(
         Camera device index or video file path
     artifact_dir : str
         Directory to save frequency data
-    plot_dir : str
-        Directory to save plots
     n_history : float
         Number of data points to use as history 
     no_overwrite : bool
@@ -273,7 +271,7 @@ class camThread(threading.Thread):
     def run(self):
         print("Starting " + self.previewName)
         # camPreview(self.previewName, self.camID)
-        run_cap_freq_estim(self.camID, artifact_dir, plot_dir,
+        run_cap_freq_estim(self.camID, artifact_dir,
                           n_history=self.n_history,
                           no_overwrite=self.no_overwrite,
                           animal_number=self.animal_number,
@@ -306,12 +304,6 @@ if __name__ == '__main__':
                        roi=args.roi if args.roi else None,
                        use_roi=args.use_roi,
                         )
-    # thread1.run_cap_freq_estim = lambda: run_cap_freq_estim(
-    #     args.camera_index, 
-    #     artifact_dir, 
-    #     plot_dir, 
-    #     n_history=args.n_history
-    # )
     thread1.start()
     thread1.join()
 
