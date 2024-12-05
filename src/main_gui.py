@@ -101,7 +101,7 @@ class MainGUI:
                 csv_var
             )
         )
-        camera_button.grid(row=3, column=0, columnspan=2, pady=10)
+        camera_button.grid(row=4, column=0, columnspan=2, pady=10)
 
     def toggle_camera(self, cam_id, camera_index, n_history, animal_number, button, roi_var, csv_var):
         if not self.camera_states[cam_id]["running"]:
