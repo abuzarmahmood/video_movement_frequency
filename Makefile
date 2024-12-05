@@ -21,10 +21,10 @@ install-packages:
 	done
 
 make-executable:
-	@echo "Adding shebangs and making Python files executable..."
+	@echo "Making Python files executable..."
 	@for file in src/*.py; do \
 		if ! grep -q '^#!' "$$file"; then \
-			sed -i '1i#!/usr/bin/env $(PYTHON)' "$$file"; \
+			echo '#!/usr/bin/env python3' | cat - "$$file" > temp && mv temp "$$file"; \
 		fi; \
 		chmod +x "$$file"; \
 	done
