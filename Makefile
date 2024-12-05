@@ -1,4 +1,4 @@
-.PHONY: setup clean 
+.PHONY: setup clean make-executable
 
 VENV = venv
 PYTHON = $(VENV)/bin/python
@@ -18,6 +18,15 @@ install-packages:
 		if ! dpkg -l $$pkg >/dev/null 2>&1; then \
 			sudo apt-get install -y $$pkg; \
 		fi \
+	done
+
+make-executable:
+	@echo "Adding shebangs and making Python files executable..."
+	@for file in src/*.py; do \
+		if ! grep -q '^#!' "$$file"; then \
+			sed -i '1i#!/usr/bin/env $(PYTHON)' "$$file"; \
+		fi; \
+		chmod +x "$$file"; \
 	done
 
 clean:
