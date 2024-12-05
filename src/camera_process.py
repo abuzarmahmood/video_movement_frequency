@@ -120,15 +120,20 @@ def run_cap_freq_estim(
     freq_file = os.path.join(artifact_dir, f"freq_data_{file_id}.csv")
     # Check if file exists
     # If no_overwrite is False, then overwrite
-    if os.path.exists(freq_file) and not no_overwrite:
-        # Ask user if they want to overwrite
-        print(f"File {freq_file} already exists. Overwrite? (y/n)")
-        user_input = input()
-        while user_input not in ['y', 'n']:
-            print("Invalid input. Please enter 'y' or 'n'")
+    if os.path.exists(freq_file):
+        if no_overwrite:  # append mode
+            pass  # keep existing file
+        elif args.force_overwrite:
+            os.remove(freq_file)  # force overwrite without asking
+        else:
+            # Ask user if they want to overwrite
+            print(f"File {freq_file} already exists. Overwrite? (y/n)")
             user_input = input()
-        if user_input == 'y':
-            os.remove(freq_file)
+            while user_input not in ['y', 'n']:
+                print("Invalid input. Please enter 'y' or 'n'")
+                user_input = input()
+            if user_input == 'y':
+                os.remove(freq_file)
     n_max_var_pixels = 25
     counter = 0
     time_stamps = []
@@ -286,7 +291,8 @@ if __name__ == '__main__':
     parser.add_argument('camera_index', type=int, help='Camera device index')
     parser.add_argument('--n_history', type=int, default=100,
                       help='Number of frames to use for frequency estimation (default: 100)')
-    parser.add_argument('--no-overwrite', action='store_true', help='Do not overwrite existing files')
+    parser.add_argument('--append', action='store_true', help='Append to existing files instead of overwriting')
+    parser.add_argument('--force-overwrite', action='store_true', help='Force overwrite existing files without prompting')
     parser.add_argument('--animal-number', type=int, help='Animal number to use in output filename')
     parser.add_argument('--use-roi', action='store_true',
                       help='Use ROI from saved file')
@@ -299,7 +305,7 @@ if __name__ == '__main__':
 
     thread1 = camThread("Camera 1", args.camera_index,
                        n_history=args.n_history,
-                       no_overwrite=args.no_overwrite,
+                       no_overwrite=args.append,  # map append to the internal no_overwrite flag
                        animal_number=args.animal_number,
                        roi=args.roi if args.roi else None,
                        use_roi=args.use_roi,
