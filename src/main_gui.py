@@ -82,7 +82,7 @@ class MainGUI:
                        variable=roi_var, value="saved").grid(row=0, column=1, padx=5)
         
         # Add CSV output options
-        csv_var = tk.StringVar(value="overwrite")
+        csv_var = tk.StringVar(value="append")
         ttk.Radiobutton(options_frame, text="Overwrite CSV", 
                        variable=csv_var, value="overwrite").grid(row=1, column=0, padx=5)
         ttk.Radiobutton(options_frame, text="Append CSV", 
