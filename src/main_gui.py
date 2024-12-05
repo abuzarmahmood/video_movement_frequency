@@ -81,6 +81,13 @@ class MainGUI:
         ttk.Radiobutton(options_frame, text="Use Saved ROI", 
                        variable=roi_var, value="saved").grid(row=0, column=1, padx=5)
         
+        # Add CSV output options
+        csv_var = tk.StringVar(value="overwrite")
+        ttk.Radiobutton(options_frame, text="Overwrite CSV", 
+                       variable=csv_var, value="overwrite").grid(row=1, column=0, padx=5)
+        ttk.Radiobutton(options_frame, text="Append CSV", 
+                       variable=csv_var, value="append").grid(row=1, column=1, padx=5)
+        
         camera_button = ttk.Button(
             camera_frame, 
             text="Start Camera", 
@@ -120,6 +127,13 @@ class MainGUI:
                 roi_option = roi_var.get()
                 if roi_option == "saved":
                     cmd.append("--use-roi")
+                    
+                # Add CSV output options
+                csv_option = csv_var.get()
+                if csv_option == "append":
+                    cmd.append("--append")
+                elif csv_option == "overwrite":
+                    cmd.append("--force-overwrite")
                 
                 self.camera_states[cam_id]["process"] = subprocess.Popen(cmd)
                 self.camera_states[cam_id]["running"] = True
