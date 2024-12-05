@@ -15,26 +15,9 @@ class MainGUI:
         main_frame = ttk.Frame(root, padding="10")
         main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         
-        # Camera Process Section
-        camera_frame = ttk.LabelFrame(main_frame, text="Camera Process", padding="5")
-        camera_frame.grid(row=0, column=0, padx=5, pady=5, sticky=(tk.W, tk.E))
-        
-        ttk.Label(camera_frame, text="Camera Index:").grid(row=0, column=0, padx=5, pady=5)
-        self.camera_index = ttk.Entry(camera_frame, width=10)
-        self.camera_index.grid(row=0, column=1, padx=5, pady=5)
-        self.camera_index.insert(0, "0")
-        
-        ttk.Label(camera_frame, text="History Frames:").grid(row=1, column=0, padx=5, pady=5)
-        self.n_history = ttk.Entry(camera_frame, width=10)
-        self.n_history.grid(row=1, column=1, padx=5, pady=5)
-        self.n_history.insert(0, "100")
-
-        ttk.Label(camera_frame, text="Animal Number:").grid(row=2, column=0, padx=5, pady=5)
-        self.animal_number = ttk.Entry(camera_frame, width=10)
-        self.animal_number.grid(row=2, column=1, padx=5, pady=5)
-        
-        self.camera_button = ttk.Button(camera_frame, text="Start Camera", command=self.toggle_camera)
-        self.camera_button.grid(row=3, column=0, columnspan=2, pady=10)
+        # Camera Process Sections
+        self.setup_camera_frame(main_frame, 0, "Camera 1")
+        self.setup_camera_frame(main_frame, 1, "Camera 2")
         
         # ROI Selection Section
         roi_frame = ttk.LabelFrame(main_frame, text="ROI Selection", padding="5")
@@ -64,24 +47,57 @@ class MainGUI:
         self.status_label.grid(row=0, column=0, pady=5)
         
         # Initialize state variables
-        self.camera_running = False
-        self.camera_process = None
+        self.camera_states = {
+            "cam1": {"running": False, "process": None},
+            "cam2": {"running": False, "process": None}
+        }
         self.freq_process = None
 
-    def toggle_camera(self):
-        if not self.camera_running:
+    def setup_camera_frame(self, parent, column, title):
+        camera_frame = ttk.LabelFrame(parent, text=title, padding="5")
+        camera_frame.grid(row=0, column=column, padx=5, pady=5, sticky=(tk.W, tk.E))
+        
+        ttk.Label(camera_frame, text="Camera Index:").grid(row=0, column=0, padx=5, pady=5)
+        camera_index = ttk.Entry(camera_frame, width=10)
+        camera_index.grid(row=0, column=1, padx=5, pady=5)
+        camera_index.insert(0, str(column))
+        
+        ttk.Label(camera_frame, text="History Frames:").grid(row=1, column=0, padx=5, pady=5)
+        n_history = ttk.Entry(camera_frame, width=10)
+        n_history.grid(row=1, column=1, padx=5, pady=5)
+        n_history.insert(0, "100")
+
+        ttk.Label(camera_frame, text="Animal Number:").grid(row=2, column=0, padx=5, pady=5)
+        animal_number = ttk.Entry(camera_frame, width=10)
+        animal_number.grid(row=2, column=1, padx=5, pady=5)
+        
+        camera_button = ttk.Button(
+            camera_frame, 
+            text="Start Camera", 
+            command=lambda: self.toggle_camera(
+                f"cam{column+1}",
+                camera_index,
+                n_history,
+                animal_number,
+                camera_button
+            )
+        )
+        camera_button.grid(row=3, column=0, columnspan=2, pady=10)
+
+    def toggle_camera(self, cam_id, camera_index, n_history, animal_number, button):
+        if not self.camera_states[cam_id]["running"]:
             try:
-                camera_idx = int(self.camera_index.get())
-                n_history = int(self.n_history.get())
+                camera_idx = int(camera_index.get())
+                n_hist = int(n_history.get())
                 
                 # Start camera process
                 cmd = [sys.executable, 
                       os.path.join(os.path.dirname(__file__), "camera_process.py"),
                       str(camera_idx),
-                      "--n_history", str(n_history)]
+                      "--n_history", str(n_hist)]
                 
                 # Add animal number if provided
-                animal_num = self.animal_number.get()
+                animal_num = animal_number.get()
                 if animal_num:
                     try:
                         animal_num = int(animal_num)
@@ -90,10 +106,10 @@ class MainGUI:
                         messagebox.showerror("Error", "Animal number must be a valid integer")
                         return
                 
-                self.camera_process = subprocess.Popen(cmd)
-                self.camera_running = True
-                self.camera_button.configure(text="Stop Camera")
-                self.status_label.configure(text="Camera running")
+                self.camera_states[cam_id]["process"] = subprocess.Popen(cmd)
+                self.camera_states[cam_id]["running"] = True
+                button.configure(text="Stop Camera")
+                self.status_label.configure(text=f"{cam_id} running")
                 
             except ValueError:
                 messagebox.showerror("Error", "Please enter valid numeric values")
@@ -101,12 +117,12 @@ class MainGUI:
                 messagebox.showerror("Error", f"Failed to start camera: {str(e)}")
         else:
             # Stop camera process
-            if self.camera_process:
-                self.camera_process.terminate()
-                self.camera_process = None
-            self.camera_running = False
-            self.camera_button.configure(text="Start Camera")
-            self.status_label.configure(text="Camera stopped")
+            if self.camera_states[cam_id]["process"]:
+                self.camera_states[cam_id]["process"].terminate()
+                self.camera_states[cam_id]["process"] = None
+            self.camera_states[cam_id]["running"] = False
+            button.configure(text="Start Camera")
+            self.status_label.configure(text=f"{cam_id} stopped")
 
     def start_freq_analysis(self):
         if self.freq_process and self.freq_process.poll() is None:
@@ -146,8 +162,9 @@ class MainGUI:
 
     def on_closing(self):
         # Cleanup processes
-        if self.camera_process:
-            self.camera_process.terminate()
+        for cam_id in self.camera_states:
+            if self.camera_states[cam_id]["process"]:
+                self.camera_states[cam_id]["process"].terminate()
         if self.freq_process:
             self.freq_process.terminate()
         self.root.destroy()
