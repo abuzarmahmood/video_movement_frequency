@@ -32,44 +32,53 @@ root.title("Frequency Visualization")
 control_frame = tk.Frame(root)
 control_frame.pack(side=tk.TOP, fill=tk.X)
 
-# Create input fields for y-axis limits
-tk.Label(control_frame, text="Y-min:").pack(side=tk.LEFT)
-y_min_entry = tk.Entry(control_frame, width=10)
+# Create top row frame
+top_row = tk.Frame(control_frame)
+top_row.pack(fill=tk.X)
+
+# Create bottom row frame
+bottom_row = tk.Frame(control_frame)
+bottom_row.pack(fill=tk.X)
+
+# Top row controls
+# Y-axis limits
+tk.Label(top_row, text="Y-min:").pack(side=tk.LEFT)
+y_min_entry = tk.Entry(top_row, width=10)
 y_min_entry.pack(side=tk.LEFT)
 y_min_entry.insert(0, "0")
 
-tk.Label(control_frame, text="Y-max:").pack(side=tk.LEFT)
-y_max_entry = tk.Entry(control_frame, width=10)
+tk.Label(top_row, text="Y-max:").pack(side=tk.LEFT)
+y_max_entry = tk.Entry(top_row, width=10)
 y_max_entry.pack(side=tk.LEFT)
 y_max_entry.insert(0, "100")
 
-# Add time window control
-tk.Label(control_frame, text="Time Window (min):").pack(side=tk.LEFT)
-time_window_entry = tk.Entry(control_frame, width=10)
+# Time window control
+tk.Label(top_row, text="Time Window (min):").pack(side=tk.LEFT)
+time_window_entry = tk.Entry(top_row, width=10)
 time_window_entry.pack(side=tk.LEFT)
 time_window_entry.insert(0, "5")  # Default 5 minutes
 
-# Add filter controls
-tk.Label(control_frame, text="Filter Length:").pack(side=tk.LEFT)
-median_filter_entry = tk.Entry(control_frame, width=10)
+# Filter controls
+tk.Label(top_row, text="Filter Length:").pack(side=tk.LEFT)
+median_filter_entry = tk.Entry(top_row, width=10)
 median_filter_entry.pack(side=tk.LEFT)
 median_filter_entry.insert(0, "5")  # Default 5 samples
 
-# Add checkbox for mean/median selection
+# Bottom row controls
+# Mean/median selection
 use_mean_var = tk.BooleanVar()
-use_mean_checkbox = tk.Checkbutton(control_frame, text="Use Mean Filter", variable=use_mean_var)
+use_mean_checkbox = tk.Checkbutton(bottom_row, text="Use Mean Filter", variable=use_mean_var)
 use_mean_checkbox.pack(side=tk.LEFT)
-# Make default true
-use_mean_var.set(True)
+use_mean_var.set(True)  # Make default true
 
-# Add frequency bounds controls
-tk.Label(control_frame, text="Min Freq (RPM):").pack(side=tk.LEFT)
-min_freq_entry = tk.Entry(control_frame, width=10)
+# Frequency bounds controls
+tk.Label(bottom_row, text="Min Freq (RPM):").pack(side=tk.LEFT)
+min_freq_entry = tk.Entry(bottom_row, width=10)
 min_freq_entry.pack(side=tk.LEFT)
 min_freq_entry.insert(0, "35")
 
-tk.Label(control_frame, text="Max Freq (RPM):").pack(side=tk.LEFT)
-max_freq_entry = tk.Entry(control_frame, width=10)
+tk.Label(bottom_row, text="Max Freq (RPM):").pack(side=tk.LEFT)
+max_freq_entry = tk.Entry(bottom_row, width=10)
 max_freq_entry.pack(side=tk.LEFT)
 max_freq_entry.insert(0, "75")
 
@@ -217,7 +226,7 @@ def apply_parameters():
         print("Parameter validation failed")
 
 # Create apply button
-apply_button = tk.Button(control_frame, text="Apply Parameters", command=apply_parameters)
+apply_button = tk.Button(bottom_row, text="Apply Parameters", command=apply_parameters)
 apply_button.pack(side=tk.LEFT, padx=5)
 
 plt.ion()
