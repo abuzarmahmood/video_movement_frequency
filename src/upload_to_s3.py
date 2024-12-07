@@ -62,7 +62,7 @@ def delete_bucket_contents(bucket):
     Args:
         bucket (str): Bucket name
     """
-    s3_client = boto3.client('s3')
+    s3_client = get_s3_client()
     try:
         # List all objects in the bucket
         paginator = s3_client.get_paginator('list_objects_v2')
@@ -78,6 +78,19 @@ def delete_bucket_contents(bucket):
         logger.error(e)
         raise
 
+def get_s3_client():
+    """Create an S3 client with explicit credentials."""
+    aws_access_key = os.getenv('AWS_S3_KEY')
+    aws_secret_key = os.getenv('AWS_S3_SECRET')
+    aws_region = os.getenv('AWS_DEFAULT_REGION')
+    
+    return boto3.client(
+        's3',
+        aws_access_key_id=aws_access_key,
+        aws_secret_access_key=aws_secret_key,
+        region_name=aws_region
+    )
+
 def upload_file(file_path, bucket, object_name=None):
     """Upload a file to S3 bucket.
     
@@ -92,7 +105,7 @@ def upload_file(file_path, bucket, object_name=None):
     if object_name is None:
         object_name = file_path
 
-    s3_client = boto3.client('s3')
+    s3_client = get_s3_client()
     try:
         s3_client.upload_file(file_path, bucket, object_name)
     except ClientError as e:
