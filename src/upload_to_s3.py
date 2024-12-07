@@ -7,24 +7,50 @@ Requires AWS credentials to be set in environment variables:
 """
 
 import os
+import json
 import boto3
 from botocore.exceptions import ClientError
 import glob
 import logging
 from datetime import datetime
+from pathlib import Path
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def validate_aws_credentials():
-    """Check if required AWS credentials are set in environment variables."""
-    required_vars = ['AWS_S3_KEY', 'AWS_S3_SECRET', 'AWS_DEFAULT_REGION']
-    missing_vars = [var for var in required_vars if not os.getenv(var)]
+def load_config():
+    """Load configuration from config.json file."""
+    base_dir = Path(__file__).parent.parent
+    config_path = base_dir / 'config.json'
     
+    if config_path.exists():
+        with open(config_path) as f:
+            return json.load(f)
+    return None
+
+def validate_aws_credentials():
+    """Check if required AWS credentials are set in environment variables or config file."""
+    required_vars = ['AWS_S3_KEY', 'AWS_S3_SECRET', 'AWS_DEFAULT_REGION']
+    
+    # First check environment variables
+    env_credentials = {var: os.getenv(var) for var in required_vars}
+    if all(env_credentials.values()):
+        return
+        
+    # If not in environment, try config file
+    config = load_config()
+    if config and 'aws' in config:
+        for var in required_vars:
+            if not os.getenv(var) and var in config['aws']:
+                os.environ[var] = config['aws'][var]
+    
+    # Final check
+    missing_vars = [var for var in required_vars if not os.getenv(var)]
     if missing_vars:
         raise EnvironmentError(
-            f"Missing required AWS credentials: {', '.join(missing_vars)}"
+            f"Missing required AWS credentials: {', '.join(missing_vars)}\n"
+            "Please set them in environment variables or config.json file"
         )
 
 def delete_bucket_contents(bucket):
@@ -77,10 +103,14 @@ def main():
         # Validate AWS credentials
         validate_aws_credentials()
         
-        # Get S3 bucket name from environment
+        # Get S3 bucket name from environment or config
         bucket_name = os.getenv('AWS_S3_BUCKET')
         if not bucket_name:
-            raise EnvironmentError("AWS_S3_BUCKET environment variable not set")
+            config = load_config()
+            if config and 'aws' in config and 'AWS_S3_BUCKET' in config['aws']:
+                bucket_name = config['aws']['AWS_S3_BUCKET']
+            else:
+                raise EnvironmentError("AWS_S3_BUCKET not found in environment or config.json")
 
         # Get base directory
         base_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
