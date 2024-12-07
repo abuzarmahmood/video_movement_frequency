@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 def validate_aws_credentials():
     """Check if required AWS credentials are set in environment variables."""
-    required_vars = ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_DEFAULT_REGION']
+    required_vars = ['AWS_S3_KEY', 'AWS_S3_SECRET', 'AWS_DEFAULT_REGION']
     missing_vars = [var for var in required_vars if not os.getenv(var)]
     
     if missing_vars:
@@ -87,10 +87,10 @@ def main():
         recent_data_dir = os.path.join(base_dir, 'artifacts', 'recent_data')
         
         # Get current timestamp for folder organization
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        # timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         
         # First delete everything in the bucket
-        delete_bucket_contents(bucket_name)
+        # delete_bucket_contents(bucket_name)
         
         # Upload all files in recent_data directory
         all_files = glob.glob(os.path.join(recent_data_dir, '*'))
@@ -98,7 +98,8 @@ def main():
         for file_path in all_files:
             # Create S3 object name with timestamp folder
             file_name = os.path.basename(file_path)
-            object_name = f"recent_data/{timestamp}/{file_name}"
+            # object_name = f"recent_data/{timestamp}/{file_name}"
+            object_name = f"recent_data/{file_name}"
             
             # Upload file
             if upload_file(file_path, bucket_name, object_name):
