@@ -23,6 +23,7 @@ from pydub.playback import play
 import os
 import threading
 import time
+from upload_to_s3 import main as upload_to_s3
 
 # Create the main window
 root = tk.Tk()
@@ -412,6 +413,12 @@ while True:
             os.path.join(recent_data_dir, f'recent_data_device_{i}.csv'),
             index=False
         )
+        
+        # Upload new data to S3
+        try:
+            upload_to_s3()
+        except Exception as e:
+            print(f"Failed to upload to S3: {e}")
         
         # Write frequency bounds and y-limits to file
         if min_freq is not None and max_freq is not None:
