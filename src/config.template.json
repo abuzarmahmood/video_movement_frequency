@@ -1,0 +1,8 @@
+{
+    "aws": {
+        "AWS_S3_KEY": "your-access-key-here",
+        "AWS_S3_SECRET": "your-secret-key-here",
+        "AWS_DEFAULT_REGION": "your-region-here",
+        "AWS_S3_BUCKET": "your-bucket-name-here"
+    }
+}

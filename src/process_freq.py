@@ -23,6 +23,8 @@ from pydub.playback import play
 import os
 import threading
 import time
+from datetime import datetime
+import pytz
 from upload_to_s3 import main as upload_to_s3
 
 # Create the main window
@@ -422,11 +424,13 @@ while True:
         
         # Write frequency bounds and y-limits to file
         if min_freq is not None and max_freq is not None:
+            local_tz = datetime.now().astimezone().tzinfo
             bounds_data = pd.DataFrame({
                 'min_freq': [min_freq],
                 'max_freq': [max_freq],
                 'y_min': [float(y_min_entry.get())],
-                'y_max': [float(y_max_entry.get())]
+                'y_max': [float(y_max_entry.get())],
+                'timezone': [str(local_tz)]
             })
             bounds_data.to_csv(
                 os.path.join(recent_data_dir, f'freq_bounds_device_{i}.csv'),
