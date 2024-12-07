@@ -23,6 +23,7 @@ from pydub.playback import play
 import os
 import threading
 import time
+from upload_to_s3 import main as upload_to_s3
 
 # Create the main window
 root = tk.Tk()
@@ -235,6 +236,8 @@ script_path = os.path.realpath(__file__)
 src_dir = os.path.dirname(script_path)
 base_dir = os.path.dirname(src_dir)
 artifact_dir = os.path.join(base_dir, 'artifacts')
+recent_data_dir = os.path.join(artifact_dir, 'recent_data')
+os.makedirs(recent_data_dir, exist_ok=True)
 
 # Get all files in artifact_dir
 freq_files = glob(os.path.join(artifact_dir, 'freq_data_device*.csv'))
@@ -399,6 +402,36 @@ while True:
         hist_list[i][1].hist(recent_freqs, bins=20, orientation='horizontal')
         hist_list[i][1].set_title(f"Recent histogram for device {i}")
         hist_list[i][1].set_xlabel('Count')
+
+        # Write recent data to file
+        recent_data = pd.DataFrame({
+            'time': recent_times,
+            'freq': recent_freqs,
+            'freq_filtered': filtered_recent
+        })
+        recent_data.to_csv(
+            os.path.join(recent_data_dir, f'recent_data_device_{i}.csv'),
+            index=False
+        )
+        
+        # Upload new data to S3
+        try:
+            upload_to_s3()
+        except Exception as e:
+            print(f"Failed to upload to S3: {e}")
+        
+        # Write frequency bounds and y-limits to file
+        if min_freq is not None and max_freq is not None:
+            bounds_data = pd.DataFrame({
+                'min_freq': [min_freq],
+                'max_freq': [max_freq],
+                'y_min': [float(y_min_entry.get())],
+                'y_max': [float(y_max_entry.get())]
+            })
+            bounds_data.to_csv(
+                os.path.join(recent_data_dir, f'freq_bounds_device_{i}.csv'),
+                index=False
+            )
         
         # Update axis limits
         for ln in line_list[i]:
