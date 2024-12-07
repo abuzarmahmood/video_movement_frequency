@@ -26,7 +26,9 @@ def load_config():
     
     if config_path.exists():
         with open(config_path) as f:
-            return json.load(f)
+            this_json = json.load(f)
+            print('Loaded secrets from config.json')
+            return this_json
     return None
 
 def validate_aws_credentials():
@@ -36,6 +38,7 @@ def validate_aws_credentials():
     # First check environment variables
     env_credentials = {var: os.getenv(var) for var in required_vars}
     if all(env_credentials.values()):
+        print('Loaded secrets from environment variables')
         return
         
     # If not in environment, try config file
