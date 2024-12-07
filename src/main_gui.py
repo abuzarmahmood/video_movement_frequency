@@ -5,6 +5,7 @@ import sys
 import os
 import threading
 import json
+from upload_to_s3 import delete_bucket_contents, validate_aws_credentials
 
 class MainGUI:
     def __init__(self, root):
@@ -45,6 +46,14 @@ class MainGUI:
         
         self.status_label = ttk.Label(status_frame, text="Ready")
         self.status_label.grid(row=0, column=0, pady=5)
+        
+        # S3 Management Section
+        s3_frame = ttk.LabelFrame(main_frame, text="S3 Management", padding="5")
+        s3_frame.grid(row=4, column=0, padx=5, pady=5, sticky=(tk.W, tk.E))
+        
+        self.purge_button = ttk.Button(s3_frame, text="Purge S3 Bucket", 
+                                     command=self.purge_s3_bucket)
+        self.purge_button.grid(row=0, column=0, pady=10)
         
         # Initialize state variables
         self.camera_states = {
@@ -190,6 +199,36 @@ class MainGUI:
             messagebox.showerror("Error", "Please enter a valid camera index")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to start ROI selection: {str(e)}")
+
+    def purge_s3_bucket(self):
+        """Purge all contents from the S3 bucket after confirmation"""
+        try:
+            # Validate AWS credentials first
+            validate_aws_credentials()
+            
+            # Ask for confirmation
+            if messagebox.askyesno("Confirm Purge", 
+                                 "Are you sure you want to purge all contents from the S3 bucket?"):
+                # Get bucket name from environment or config
+                bucket_name = os.getenv('AWS_S3_BUCKET')
+                if not bucket_name:
+                    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.json')
+                    if os.path.exists(config_path):
+                        with open(config_path) as f:
+                            config = json.load(f)
+                            if 'aws' in config and 'AWS_S3_BUCKET' in config['aws']:
+                                bucket_name = config['aws']['AWS_S3_BUCKET']
+                
+                if not bucket_name:
+                    raise ValueError("AWS_S3_BUCKET not found in environment or config.json")
+                
+                # Perform the purge
+                delete_bucket_contents(bucket_name)
+                messagebox.showinfo("Success", "S3 bucket contents have been purged")
+                self.status_label.configure(text="S3 bucket purged")
+                
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to purge S3 bucket: {str(e)}")
 
     def on_closing(self):
         # Cleanup processes
