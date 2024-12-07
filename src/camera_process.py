@@ -14,11 +14,12 @@ import threading
 import sys
 from functools import partial
 
-# base_dir = '/home/abuzarmahmood/projects/video_movement_frequency'
 script_path = os.path.realpath(__file__)
 base_dir = os.path.dirname(os.path.dirname(script_path))
-plot_dir = os.path.join(base_dir, 'plots')
 artifact_dir = os.path.join(base_dir, 'artifacts')
+if not os.path.exists(artifact_dir):
+    os.makedirs(artifact_dir)
+
 
 
 def calc_freq(data, fs):
@@ -75,7 +76,6 @@ def get_capture(device_id=0, width=320, height=180):
 def run_cap_freq_estim(
         device_id, 
         artifact_dir, 
-        plot_dir, 
         n_history=100, 
         no_overwrite=True, 
         animal_number=None,
@@ -91,8 +91,6 @@ def run_cap_freq_estim(
         Camera device index or video file path
     artifact_dir : str
         Directory to save frequency data
-    plot_dir : str
-        Directory to save plots
     n_history : float
         Number of data points to use as history 
     no_overwrite : bool
@@ -122,15 +120,20 @@ def run_cap_freq_estim(
     freq_file = os.path.join(artifact_dir, f"freq_data_{file_id}.csv")
     # Check if file exists
     # If no_overwrite is False, then overwrite
-    if os.path.exists(freq_file) and not no_overwrite:
-        # Ask user if they want to overwrite
-        print(f"File {freq_file} already exists. Overwrite? (y/n)")
-        user_input = input()
-        while user_input not in ['y', 'n']:
-            print("Invalid input. Please enter 'y' or 'n'")
+    if os.path.exists(freq_file):
+        if no_overwrite:  # append mode
+            pass  # keep existing file
+        elif args.force_overwrite:
+            os.remove(freq_file)  # force overwrite without asking
+        else:
+            # Ask user if they want to overwrite
+            print(f"File {freq_file} already exists. Overwrite? (y/n)")
             user_input = input()
-        if user_input == 'y':
-            os.remove(freq_file)
+            while user_input not in ['y', 'n']:
+                print("Invalid input. Please enter 'y' or 'n'")
+                user_input = input()
+            if user_input == 'y':
+                os.remove(freq_file)
     n_max_var_pixels = 25
     counter = 0
     time_stamps = []
@@ -273,7 +276,7 @@ class camThread(threading.Thread):
     def run(self):
         print("Starting " + self.previewName)
         # camPreview(self.previewName, self.camID)
-        run_cap_freq_estim(self.camID, artifact_dir, plot_dir,
+        run_cap_freq_estim(self.camID, artifact_dir,
                           n_history=self.n_history,
                           no_overwrite=self.no_overwrite,
                           animal_number=self.animal_number,
@@ -288,7 +291,8 @@ if __name__ == '__main__':
     parser.add_argument('camera_index', type=int, help='Camera device index')
     parser.add_argument('--n_history', type=int, default=100,
                       help='Number of frames to use for frequency estimation (default: 100)')
-    parser.add_argument('--no-overwrite', action='store_true', help='Do not overwrite existing files')
+    parser.add_argument('--append', action='store_true', help='Append to existing files instead of overwriting')
+    parser.add_argument('--force-overwrite', action='store_true', help='Force overwrite existing files without prompting')
     parser.add_argument('--animal-number', type=int, help='Animal number to use in output filename')
     parser.add_argument('--use-roi', action='store_true',
                       help='Use ROI from saved file')
@@ -301,17 +305,11 @@ if __name__ == '__main__':
 
     thread1 = camThread("Camera 1", args.camera_index,
                        n_history=args.n_history,
-                       no_overwrite=args.no_overwrite,
+                       no_overwrite=args.append,  # map append to the internal no_overwrite flag
                        animal_number=args.animal_number,
                        roi=args.roi if args.roi else None,
                        use_roi=args.use_roi,
                         )
-    # thread1.run_cap_freq_estim = lambda: run_cap_freq_estim(
-    #     args.camera_index, 
-    #     artifact_dir, 
-    #     plot_dir, 
-    #     n_history=args.n_history
-    # )
     thread1.start()
     thread1.join()
 
