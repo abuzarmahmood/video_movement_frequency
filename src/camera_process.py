@@ -139,8 +139,8 @@ def run_cap_freq_estim(
     time_stamps = []
     frame_list = []
     roi_list = []
-    max_var_timeseries = []
-    fs_list = []
+    # max_var_timeseries = []
+    # fs_list = []
     # If a video input is given, run loop until video ends
     if device_id == 'test':
         n_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
@@ -192,6 +192,7 @@ def run_cap_freq_estim(
                 x, y, w, h = roi
                 # frame_array = np.array([f[y:y+h, x:x+w] for f in frame_list[-n_history:]])
                 frame_array = np.array(roi_list[-n_history:])
+                roi_list = []
                 variance = np.var(frame_array, axis=0)
             else:
                 variance = np.var(frame_list[-n_history:], axis=0)
@@ -210,9 +211,9 @@ def run_cap_freq_estim(
                 max_var_pixels = (max_var_pixels[0] + y, max_var_pixels[1] + x)
             max_var_pixel_vals = np.stack(frame_list[-n_history:], axis=0)[
                 :, max_var_pixels[0], max_var_pixels[1]] 
-            max_var_timeseries.append(max_var_pixel_vals)
+            # max_var_timeseries.append(max_var_pixel_vals)
             freq_val = calc_freq(max_var_pixel_vals, frame_rate)
-            fs_list.append(frame_rate)
+            # fs_list.append(frame_rate)
             time_stamps = []
             frame_list = []
             # Save timeseries of max variance pixels
