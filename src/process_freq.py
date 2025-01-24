@@ -279,9 +279,10 @@ while True:
         time_vals = freq['time'].astype('datetime64[s]').values
         freq_vals = freq['freq'].values * 60  # Convert to RPM
         
-        # Get recent data window - validate input
+        # Get recent data window from params file
+        params = read_parameters()
         _, time_val = validate_numeric_input(
-            time_window_entry.get(), min_val=0.1, max_val=180, param_name="Time window"
+            params["time_window"], min_val=0.1, max_val=180, param_name="Time window"
         )
         if time_val is None:
             time_val = 5  # Default to 5 minutes if invalid
@@ -298,16 +299,17 @@ while True:
         line_list[i][0].set_data(time_vals, freq_vals)
         
         # Apply median filter to full series
+        params = read_parameters()
         _, filter_length = validate_numeric_input(
-            median_filter_entry.get(), min_val=1, max_val=1000, param_name="Filter length"
+            params["filter_length"], min_val=1, max_val=1000, param_name="Filter length"
         )
         if filter_length is None:
             filter_length = 5
-        filtered_vals = apply_filter(freq_vals, filter_length, use_mean_var.get())
+        filtered_vals = apply_filter(freq_vals, filter_length, params["use_mean"])
         
         # Get frequency bounds
-        _, min_freq = validate_numeric_input(min_freq_entry.get(), min_val=0, param_name="Min frequency")
-        _, max_freq = validate_numeric_input(max_freq_entry.get(), min_val=0, param_name="Max frequency")
+        _, min_freq = validate_numeric_input(params["min_freq"], min_val=0, param_name="Min frequency")
+        _, max_freq = validate_numeric_input(params["max_freq"], min_val=0, param_name="Max frequency")
         
         # Check if filtered values exceed bounds and play/stop warning accordingly
         if min_freq is not None and max_freq is not None:
@@ -339,7 +341,8 @@ while True:
         line_list[i][1].set_data(recent_times, recent_freqs)
         
         # Apply median filter to recent series
-        filtered_recent = apply_filter(recent_freqs, filter_length, use_mean_var.get())
+        params = read_parameters()
+        filtered_recent = apply_filter(recent_freqs, filter_length, params["use_mean"])
         
         # Plot both raw and filtered recent data
         line_list[i][1].set_data(recent_times, recent_freqs)
@@ -394,8 +397,8 @@ while True:
             bounds_data = pd.DataFrame({
                 'min_freq': [min_freq],
                 'max_freq': [max_freq],
-                'y_min': [float(y_min_entry.get())],
-                'y_max': [float(y_max_entry.get())],
+                'y_min': [float(params["y_min"])],
+                'y_max': [float(params["y_max"])],
                 'timezone': [str(local_tz)]
             })
             bounds_data.to_csv(
@@ -409,8 +412,9 @@ while True:
             ln.axes.autoscale_view()
 
         # Update bound fills for both full and recent plots
-        _, min_freq = validate_numeric_input(min_freq_entry.get(), min_val=0, param_name="Min frequency")
-        _, max_freq = validate_numeric_input(max_freq_entry.get(), min_val=0, param_name="Max frequency")
+        params = read_parameters()
+        _, min_freq = validate_numeric_input(params["min_freq"], min_val=0, param_name="Min frequency")
+        _, max_freq = validate_numeric_input(params["max_freq"], min_val=0, param_name="Max frequency")
         if min_freq is not None and max_freq is not None:
             for ln in filtered_line_list[i]: 
                 update_bound_fills(ln, min_freq, max_freq)
