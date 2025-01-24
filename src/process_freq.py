@@ -25,65 +25,33 @@ import threading
 import time
 from datetime import datetime
 import pytz
+import json
 from upload_to_s3 import main as upload_to_s3
 
 # Create the main window
 root = tk.Tk()
 root.title("Frequency Visualization")
 
-# Create frame for controls
-control_frame = tk.Frame(root)
-control_frame.pack(side=tk.TOP, fill=tk.X)
+def read_parameters():
+    """Read visualization parameters from file"""
+    try:
+        params_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
+                                 'artifacts', 'visualization_params.json')
+        with open(params_file, 'r') as f:
+            params = json.load(f)
+        return params
+    except Exception as e:
+        print(f"Failed to read parameters: {e}")
+        return {
+            "y_min": "0",
+            "y_max": "100", 
+            "time_window": "5",
+            "filter_length": "5",
+            "min_freq": "35",
+            "max_freq": "75",
+            "use_mean": True
+        }
 
-# Create top row frame
-top_row = tk.Frame(control_frame)
-top_row.pack(fill=tk.X)
-
-# Create bottom row frame
-bottom_row = tk.Frame(control_frame)
-bottom_row.pack(fill=tk.X)
-
-# Top row controls
-# Y-axis limits
-tk.Label(top_row, text="Y-min:").pack(side=tk.LEFT)
-y_min_entry = tk.Entry(top_row, width=10)
-y_min_entry.pack(side=tk.LEFT)
-y_min_entry.insert(0, "0")
-
-tk.Label(top_row, text="Y-max:").pack(side=tk.LEFT)
-y_max_entry = tk.Entry(top_row, width=10)
-y_max_entry.pack(side=tk.LEFT)
-y_max_entry.insert(0, "100")
-
-# Time window control
-tk.Label(top_row, text="Time Window (min):").pack(side=tk.LEFT)
-time_window_entry = tk.Entry(top_row, width=10)
-time_window_entry.pack(side=tk.LEFT)
-time_window_entry.insert(0, "5")  # Default 5 minutes
-
-# Filter controls
-tk.Label(top_row, text="Filter Length:").pack(side=tk.LEFT)
-median_filter_entry = tk.Entry(top_row, width=10)
-median_filter_entry.pack(side=tk.LEFT)
-median_filter_entry.insert(0, "5")  # Default 5 samples
-
-# Bottom row controls
-# Mean/median selection
-use_mean_var = tk.BooleanVar()
-use_mean_checkbox = tk.Checkbutton(bottom_row, text="Use Mean Filter", variable=use_mean_var)
-use_mean_checkbox.pack(side=tk.LEFT)
-use_mean_var.set(True)  # Make default true
-
-# Frequency bounds controls
-tk.Label(bottom_row, text="Min Freq (RPM):").pack(side=tk.LEFT)
-min_freq_entry = tk.Entry(bottom_row, width=10)
-min_freq_entry.pack(side=tk.LEFT)
-min_freq_entry.insert(0, "35")
-
-tk.Label(bottom_row, text="Max Freq (RPM):").pack(side=tk.LEFT)
-max_freq_entry = tk.Entry(bottom_row, width=10)
-max_freq_entry.pack(side=tk.LEFT)
-max_freq_entry.insert(0, "75")
 
 # Load sound file once at startup
 _warning_sound = AudioSegment.from_wav(os.path.join(os.path.dirname(__file__), "warning.wav"))
@@ -165,7 +133,7 @@ def update_bound_fills(ln, min_freq, max_freq):
                                color='lightcoral', alpha=0.7)
 
 def apply_parameters():
-    """Apply all parameter changes"""
+    """Apply parameters from file"""
     global bound_lines
     
     # Remove existing bound lines
@@ -174,22 +142,22 @@ def apply_parameters():
             line.remove()
     bound_lines = []
     
-    # Validate y-axis limits
-    valid_ymin, ymin = validate_numeric_input(y_min_entry.get(), param_name="Y-min")
-    valid_ymax, ymax = validate_numeric_input(y_max_entry.get(), param_name="Y-max")
+    params = read_parameters()
+    
+    # Validate parameters
+    valid_ymin, ymin = validate_numeric_input(params["y_min"], param_name="Y-min")
+    valid_ymax, ymax = validate_numeric_input(params["y_max"], param_name="Y-max")
     valid_time, time_window = validate_numeric_input(
-        time_window_entry.get(), min_val=0.1, max_val=60, param_name="Time window"
+        params["time_window"], min_val=0.1, max_val=60, param_name="Time window"
     )
     valid_filter, filter_length = validate_numeric_input(
-        median_filter_entry.get(), min_val=1, max_val=1000, param_name="Filter length"
+        params["filter_length"], min_val=1, max_val=1000, param_name="Filter length"
     )
-    
-    # Validate frequency bounds
     valid_min_freq, min_freq = validate_numeric_input(
-        min_freq_entry.get(), min_val=0, param_name="Min frequency"
+        params["min_freq"], min_val=0, param_name="Min frequency"
     )
     valid_max_freq, max_freq = validate_numeric_input(
-        max_freq_entry.get(), min_val=0, param_name="Max frequency"
+        params["max_freq"], min_val=0, param_name="Max frequency"
     )
         
     if valid_ymin and valid_ymax and valid_time and valid_filter and valid_min_freq and valid_max_freq:
@@ -228,9 +196,6 @@ def apply_parameters():
     else:
         print("Parameter validation failed")
 
-# Create apply button
-apply_button = tk.Button(bottom_row, text="Apply Parameters", command=apply_parameters)
-apply_button.pack(side=tk.LEFT, padx=5)
 
 plt.ion()
 
@@ -313,9 +278,10 @@ while True:
         time_vals = freq['time'].astype('datetime64[s]').values
         freq_vals = freq['freq'].values * 60  # Convert to RPM
         
-        # Get recent data window - validate input
+        # Get recent data window from params file
+        params = read_parameters()
         _, time_val = validate_numeric_input(
-            time_window_entry.get(), min_val=0.1, max_val=180, param_name="Time window"
+            params["time_window"], min_val=0.1, max_val=180, param_name="Time window"
         )
         if time_val is None:
             time_val = 5  # Default to 5 minutes if invalid
@@ -332,16 +298,17 @@ while True:
         line_list[i][0].set_data(time_vals, freq_vals)
         
         # Apply median filter to full series
+        params = read_parameters()
         _, filter_length = validate_numeric_input(
-            median_filter_entry.get(), min_val=1, max_val=1000, param_name="Filter length"
+            params["filter_length"], min_val=1, max_val=1000, param_name="Filter length"
         )
         if filter_length is None:
             filter_length = 5
-        filtered_vals = apply_filter(freq_vals, filter_length, use_mean_var.get())
+        filtered_vals = apply_filter(freq_vals, filter_length, params["use_mean"])
         
         # Get frequency bounds
-        _, min_freq = validate_numeric_input(min_freq_entry.get(), min_val=0, param_name="Min frequency")
-        _, max_freq = validate_numeric_input(max_freq_entry.get(), min_val=0, param_name="Max frequency")
+        _, min_freq = validate_numeric_input(params["min_freq"], min_val=0, param_name="Min frequency")
+        _, max_freq = validate_numeric_input(params["max_freq"], min_val=0, param_name="Max frequency")
         
         # Check if filtered values exceed bounds and play/stop warning accordingly
         if min_freq is not None and max_freq is not None:
@@ -373,7 +340,8 @@ while True:
         line_list[i][1].set_data(recent_times, recent_freqs)
         
         # Apply median filter to recent series
-        filtered_recent = apply_filter(recent_freqs, filter_length, use_mean_var.get())
+        params = read_parameters()
+        filtered_recent = apply_filter(recent_freqs, filter_length, params["use_mean"])
         
         # Plot both raw and filtered recent data
         line_list[i][1].set_data(recent_times, recent_freqs)
@@ -428,8 +396,8 @@ while True:
             bounds_data = pd.DataFrame({
                 'min_freq': [min_freq],
                 'max_freq': [max_freq],
-                'y_min': [float(y_min_entry.get())],
-                'y_max': [float(y_max_entry.get())],
+                'y_min': [float(params["y_min"])],
+                'y_max': [float(params["y_max"])],
                 'timezone': [str(local_tz)]
             })
             bounds_data.to_csv(
@@ -443,11 +411,14 @@ while True:
             ln.axes.autoscale_view()
 
         # Update bound fills for both full and recent plots
-        _, min_freq = validate_numeric_input(min_freq_entry.get(), min_val=0, param_name="Min frequency")
-        _, max_freq = validate_numeric_input(max_freq_entry.get(), min_val=0, param_name="Max frequency")
+        params = read_parameters()
+        _, min_freq = validate_numeric_input(params["min_freq"], min_val=0, param_name="Min frequency")
+        _, max_freq = validate_numeric_input(params["max_freq"], min_val=0, param_name="Max frequency")
         if min_freq is not None and max_freq is not None:
             for ln in filtered_line_list[i]: 
                 update_bound_fills(ln, min_freq, max_freq)
+
+        apply_parameters()
         
     # Apply parameters if this is the first time
     if len(bound_lines) == 0:
