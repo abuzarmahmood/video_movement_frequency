@@ -142,16 +142,14 @@ def apply_parameters():
             line.remove()
     bound_lines = []
     
-    # Only read parameters every 10 iterations to reduce file I/O
-    if i % 10 == 0:
-        params = read_parameters()
-        
-        # Validate parameters
-        valid_ymin, ymin = validate_numeric_input(params["y_min"], param_name="Y-min")
-        valid_ymax, ymax = validate_numeric_input(params["y_max"], param_name="Y-max")
-        valid_time, time_window = validate_numeric_input(
-            params["time_window"], min_val=0.1, max_val=60, param_name="Time window"
-        )
+    params = read_parameters()
+    
+    # Validate parameters
+    valid_ymin, ymin = validate_numeric_input(params["y_min"], param_name="Y-min")
+    valid_ymax, ymax = validate_numeric_input(params["y_max"], param_name="Y-max")
+    valid_time, time_window = validate_numeric_input(
+        params["time_window"], min_val=0.1, max_val=60, param_name="Time window"
+    )
     valid_filter, filter_length = validate_numeric_input(
         params["filter_length"], min_val=1, max_val=1000, param_name="Filter length"
     )
@@ -419,6 +417,8 @@ while True:
         if min_freq is not None and max_freq is not None:
             for ln in filtered_line_list[i]: 
                 update_bound_fills(ln, min_freq, max_freq)
+
+        apply_parameters()
         
     # Apply parameters if this is the first time
     if len(bound_lines) == 0:
