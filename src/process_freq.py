@@ -164,9 +164,20 @@ def update_bound_fills(ln, min_freq, max_freq):
             ln.axes.fill_between([xmin, xmax], ymin, min_freq, 
                                color='lightcoral', alpha=0.7)
 
+# Store current parameters
+current_params = {
+    'ymin': None,
+    'ymax': None,
+    'time_window': None,
+    'filter_length': None,
+    'min_freq': None,
+    'max_freq': None,
+    'use_mean': None
+}
+
 def apply_parameters():
     """Apply all parameter changes"""
-    global bound_lines
+    global bound_lines, current_params
     
     # Remove existing bound lines
     for line in bound_lines:
@@ -191,6 +202,17 @@ def apply_parameters():
     valid_max_freq, max_freq = validate_numeric_input(
         max_freq_entry.get(), min_val=0, param_name="Max frequency"
     )
+
+    # Store current parameters
+    current_params.update({
+        'ymin': ymin,
+        'ymax': ymax,
+        'time_window': time_window,
+        'filter_length': filter_length,
+        'min_freq': min_freq,
+        'max_freq': max_freq,
+        'use_mean': use_mean_var.get()
+    })
         
     if valid_ymin and valid_ymax and valid_time and valid_filter and valid_min_freq and valid_max_freq:
         if ymin >= ymax:
@@ -313,12 +335,10 @@ while True:
         time_vals = freq['time'].astype('datetime64[s]').values
         freq_vals = freq['freq'].values * 60  # Convert to RPM
         
-        # Get recent data window - validate input
-        _, time_val = validate_numeric_input(
-            time_window_entry.get(), min_val=0.1, max_val=180, param_name="Time window"
-        )
+        # Use stored time window parameter
+        time_val = current_params['time_window']
         if time_val is None:
-            time_val = 5  # Default to 5 minutes if invalid
+            time_val = 5  # Default to 5 minutes if not set
         time_window = time_val * 60  # Convert minutes to seconds
         # Convert time_window to datetime64 
         time_window = np.timedelta64(int(time_window), 's')
@@ -331,17 +351,15 @@ while True:
         # time_vals = np.float64(time_vals)
         line_list[i][0].set_data(time_vals, freq_vals)
         
-        # Apply median filter to full series
-        _, filter_length = validate_numeric_input(
-            median_filter_entry.get(), min_val=1, max_val=1000, param_name="Filter length"
-        )
+        # Use stored filter parameters
+        filter_length = current_params['filter_length']
         if filter_length is None:
             filter_length = 5
-        filtered_vals = apply_filter(freq_vals, filter_length, use_mean_var.get())
+        filtered_vals = apply_filter(freq_vals, filter_length, current_params['use_mean'])
         
-        # Get frequency bounds
-        _, min_freq = validate_numeric_input(min_freq_entry.get(), min_val=0, param_name="Min frequency")
-        _, max_freq = validate_numeric_input(max_freq_entry.get(), min_val=0, param_name="Max frequency")
+        # Use stored frequency bounds
+        min_freq = current_params['min_freq']
+        max_freq = current_params['max_freq']
         
         # Check if filtered values exceed bounds and play/stop warning accordingly
         if min_freq is not None and max_freq is not None:
