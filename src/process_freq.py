@@ -25,11 +25,32 @@ import threading
 import time
 from datetime import datetime
 import pytz
+import json
 from upload_to_s3 import main as upload_to_s3
 
 # Create the main window
 root = tk.Tk()
 root.title("Frequency Visualization")
+
+def read_parameters():
+    """Read visualization parameters from file"""
+    try:
+        params_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
+                                 'artifacts', 'visualization_params.json')
+        with open(params_file, 'r') as f:
+            params = json.load(f)
+        return params
+    except Exception as e:
+        print(f"Failed to read parameters: {e}")
+        return {
+            "y_min": "0",
+            "y_max": "100", 
+            "time_window": "5",
+            "filter_length": "5",
+            "min_freq": "35",
+            "max_freq": "75",
+            "use_mean": True
+        }
 
 # Create frame for controls
 control_frame = tk.Frame(root)
