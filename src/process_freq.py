@@ -197,9 +197,6 @@ def apply_parameters():
     else:
         print("Parameter validation failed")
 
-# Create apply button
-apply_button = tk.Button(bottom_row, text="Apply Parameters", command=apply_parameters)
-apply_button.pack(side=tk.LEFT, padx=5)
 
 plt.ion()
 
