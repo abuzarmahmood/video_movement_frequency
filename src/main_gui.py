@@ -35,10 +35,54 @@ class MainGUI:
         # Frequency Analysis Section
         freq_frame = ttk.LabelFrame(main_frame, text="Frequency Analysis", padding="5")
         freq_frame.grid(row=2, column=0, padx=5, pady=5, sticky=(tk.W, tk.E))
+
+        # Parameter controls
+        ttk.Label(freq_frame, text="Y-min:").grid(row=1, column=0, padx=5, pady=5)
+        self.y_min_entry = ttk.Entry(freq_frame, width=10)
+        self.y_min_entry.grid(row=1, column=1, padx=5, pady=5)
+        self.y_min_entry.insert(0, "0")
+
+        ttk.Label(freq_frame, text="Y-max:").grid(row=2, column=0, padx=5, pady=5)
+        self.y_max_entry = ttk.Entry(freq_frame, width=10)
+        self.y_max_entry.grid(row=2, column=1, padx=5, pady=5)
+        self.y_max_entry.insert(0, "100")
+
+        ttk.Label(freq_frame, text="Time Window (min):").grid(row=3, column=0, padx=5, pady=5)
+        self.time_window_entry = ttk.Entry(freq_frame, width=10)
+        self.time_window_entry.grid(row=3, column=1, padx=5, pady=5)
+        self.time_window_entry.insert(0, "5")
+
+        ttk.Label(freq_frame, text="Filter Length:").grid(row=4, column=0, padx=5, pady=5)
+        self.median_filter_entry = ttk.Entry(freq_frame, width=10)
+        self.median_filter_entry.grid(row=4, column=1, padx=5, pady=5)
+        self.median_filter_entry.insert(0, "5")
+
+        ttk.Label(freq_frame, text="Min Freq (RPM):").grid(row=5, column=0, padx=5, pady=5)
+        self.min_freq_entry = ttk.Entry(freq_frame, width=10)
+        self.min_freq_entry.grid(row=5, column=1, padx=5, pady=5)
+        self.min_freq_entry.insert(0, "35")
+
+        ttk.Label(freq_frame, text="Max Freq (RPM):").grid(row=6, column=0, padx=5, pady=5)
+        self.max_freq_entry = ttk.Entry(freq_frame, width=10)
+        self.max_freq_entry.grid(row=6, column=1, padx=5, pady=5)
+        self.max_freq_entry.insert(0, "75")
+
+        # Use mean/median selection
+        self.use_mean_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(freq_frame, text="Use Mean Filter", 
+                       variable=self.use_mean_var).grid(row=7, column=0, columnspan=2)
+
+        # Control buttons
+        button_frame = ttk.Frame(freq_frame)
+        button_frame.grid(row=8, column=0, columnspan=2, pady=10)
         
-        self.freq_button = ttk.Button(freq_frame, text="Start Frequency Analysis", 
+        self.freq_button = ttk.Button(button_frame, text="Start Frequency Analysis", 
                                     command=self.start_freq_analysis)
-        self.freq_button.grid(row=0, column=0, pady=10)
+        self.freq_button.pack(side=tk.LEFT, padx=5)
+
+        self.apply_params_button = ttk.Button(button_frame, text="Apply Parameters",
+                                            command=self.apply_parameters)
+        self.apply_params_button.pack(side=tk.LEFT, padx=5)
         
         # Status section
         status_frame = ttk.LabelFrame(main_frame, text="Status", padding="5")
@@ -164,12 +208,41 @@ class MainGUI:
             button.configure(text="Start Camera")
             self.status_label.configure(text=f"{cam_id} stopped")
 
+    def apply_parameters(self):
+        """Write visualization parameters to file"""
+        try:
+            params = {
+                "y_min": self.y_min_entry.get(),
+                "y_max": self.y_max_entry.get(),
+                "time_window": self.time_window_entry.get(),
+                "filter_length": self.median_filter_entry.get(),
+                "min_freq": self.min_freq_entry.get(),
+                "max_freq": self.max_freq_entry.get(),
+                "use_mean": self.use_mean_var.get()
+            }
+            
+            # Save to artifacts directory
+            params_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
+                                     'artifacts', 'visualization_params.json')
+            os.makedirs(os.path.dirname(params_file), exist_ok=True)
+            
+            with open(params_file, 'w') as f:
+                json.dump(params, f, indent=4)
+            
+            self.status_label.configure(text="Parameters saved")
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save parameters: {str(e)}")
+
     def start_freq_analysis(self):
         if self.freq_process and self.freq_process.poll() is None:
             messagebox.showinfo("Info", "Frequency analysis is already running")
             return
             
         try:
+            # Apply parameters before starting
+            self.apply_parameters()
+            
             # Start frequency analysis process
             cmd = [sys.executable, 
                   os.path.join(os.path.dirname(__file__), "process_freq.py")]

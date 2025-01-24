@@ -165,7 +165,7 @@ def update_bound_fills(ln, min_freq, max_freq):
                                color='lightcoral', alpha=0.7)
 
 def apply_parameters():
-    """Apply all parameter changes"""
+    """Apply parameters from file"""
     global bound_lines
     
     # Remove existing bound lines
@@ -174,22 +174,23 @@ def apply_parameters():
             line.remove()
     bound_lines = []
     
-    # Validate y-axis limits
-    valid_ymin, ymin = validate_numeric_input(y_min_entry.get(), param_name="Y-min")
-    valid_ymax, ymax = validate_numeric_input(y_max_entry.get(), param_name="Y-max")
+    # Read parameters
+    params = read_parameters()
+    
+    # Validate parameters
+    valid_ymin, ymin = validate_numeric_input(params["y_min"], param_name="Y-min")
+    valid_ymax, ymax = validate_numeric_input(params["y_max"], param_name="Y-max")
     valid_time, time_window = validate_numeric_input(
-        time_window_entry.get(), min_val=0.1, max_val=60, param_name="Time window"
+        params["time_window"], min_val=0.1, max_val=60, param_name="Time window"
     )
     valid_filter, filter_length = validate_numeric_input(
-        median_filter_entry.get(), min_val=1, max_val=1000, param_name="Filter length"
+        params["filter_length"], min_val=1, max_val=1000, param_name="Filter length"
     )
-    
-    # Validate frequency bounds
     valid_min_freq, min_freq = validate_numeric_input(
-        min_freq_entry.get(), min_val=0, param_name="Min frequency"
+        params["min_freq"], min_val=0, param_name="Min frequency"
     )
     valid_max_freq, max_freq = validate_numeric_input(
-        max_freq_entry.get(), min_val=0, param_name="Max frequency"
+        params["max_freq"], min_val=0, param_name="Max frequency"
     )
         
     if valid_ymin and valid_ymax and valid_time and valid_filter and valid_min_freq and valid_max_freq:
