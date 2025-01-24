@@ -52,59 +52,6 @@ def read_parameters():
             "use_mean": True
         }
 
-# Create frame for controls
-control_frame = tk.Frame(root)
-control_frame.pack(side=tk.TOP, fill=tk.X)
-
-# Create top row frame
-top_row = tk.Frame(control_frame)
-top_row.pack(fill=tk.X)
-
-# Create bottom row frame
-bottom_row = tk.Frame(control_frame)
-bottom_row.pack(fill=tk.X)
-
-# Top row controls
-# Y-axis limits
-tk.Label(top_row, text="Y-min:").pack(side=tk.LEFT)
-y_min_entry = tk.Entry(top_row, width=10)
-y_min_entry.pack(side=tk.LEFT)
-y_min_entry.insert(0, "0")
-
-tk.Label(top_row, text="Y-max:").pack(side=tk.LEFT)
-y_max_entry = tk.Entry(top_row, width=10)
-y_max_entry.pack(side=tk.LEFT)
-y_max_entry.insert(0, "100")
-
-# Time window control
-tk.Label(top_row, text="Time Window (min):").pack(side=tk.LEFT)
-time_window_entry = tk.Entry(top_row, width=10)
-time_window_entry.pack(side=tk.LEFT)
-time_window_entry.insert(0, "5")  # Default 5 minutes
-
-# Filter controls
-tk.Label(top_row, text="Filter Length:").pack(side=tk.LEFT)
-median_filter_entry = tk.Entry(top_row, width=10)
-median_filter_entry.pack(side=tk.LEFT)
-median_filter_entry.insert(0, "5")  # Default 5 samples
-
-# Bottom row controls
-# Mean/median selection
-use_mean_var = tk.BooleanVar()
-use_mean_checkbox = tk.Checkbutton(bottom_row, text="Use Mean Filter", variable=use_mean_var)
-use_mean_checkbox.pack(side=tk.LEFT)
-use_mean_var.set(True)  # Make default true
-
-# Frequency bounds controls
-tk.Label(bottom_row, text="Min Freq (RPM):").pack(side=tk.LEFT)
-min_freq_entry = tk.Entry(bottom_row, width=10)
-min_freq_entry.pack(side=tk.LEFT)
-min_freq_entry.insert(0, "35")
-
-tk.Label(bottom_row, text="Max Freq (RPM):").pack(side=tk.LEFT)
-max_freq_entry = tk.Entry(bottom_row, width=10)
-max_freq_entry.pack(side=tk.LEFT)
-max_freq_entry.insert(0, "75")
 
 # Load sound file once at startup
 _warning_sound = AudioSegment.from_wav(os.path.join(os.path.dirname(__file__), "warning.wav"))

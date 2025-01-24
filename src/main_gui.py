@@ -75,6 +75,46 @@ class MainGUI:
         # Control buttons
         button_frame = ttk.Frame(freq_frame)
         button_frame.grid(row=8, column=0, columnspan=2, pady=10)
+
+        # Parameter controls
+        ttk.Label(freq_frame, text="Y-min:").grid(row=1, column=0, padx=5, pady=5)
+        self.y_min_entry = ttk.Entry(freq_frame, width=10)
+        self.y_min_entry.grid(row=1, column=1, padx=5, pady=5)
+        self.y_min_entry.insert(0, "0")
+
+        ttk.Label(freq_frame, text="Y-max:").grid(row=2, column=0, padx=5, pady=5)
+        self.y_max_entry = ttk.Entry(freq_frame, width=10)
+        self.y_max_entry.grid(row=2, column=1, padx=5, pady=5)
+        self.y_max_entry.insert(0, "100")
+
+        ttk.Label(freq_frame, text="Time Window (min):").grid(row=3, column=0, padx=5, pady=5)
+        self.time_window_entry = ttk.Entry(freq_frame, width=10)
+        self.time_window_entry.grid(row=3, column=1, padx=5, pady=5)
+        self.time_window_entry.insert(0, "5")
+
+        ttk.Label(freq_frame, text="Filter Length:").grid(row=4, column=0, padx=5, pady=5)
+        self.median_filter_entry = ttk.Entry(freq_frame, width=10)
+        self.median_filter_entry.grid(row=4, column=1, padx=5, pady=5)
+        self.median_filter_entry.insert(0, "5")
+
+        ttk.Label(freq_frame, text="Min Freq (RPM):").grid(row=5, column=0, padx=5, pady=5)
+        self.min_freq_entry = ttk.Entry(freq_frame, width=10)
+        self.min_freq_entry.grid(row=5, column=1, padx=5, pady=5)
+        self.min_freq_entry.insert(0, "35")
+
+        ttk.Label(freq_frame, text="Max Freq (RPM):").grid(row=6, column=0, padx=5, pady=5)
+        self.max_freq_entry = ttk.Entry(freq_frame, width=10)
+        self.max_freq_entry.grid(row=6, column=1, padx=5, pady=5)
+        self.max_freq_entry.insert(0, "75")
+
+        # Use mean/median selection
+        self.use_mean_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(freq_frame, text="Use Mean Filter", 
+                       variable=self.use_mean_var).grid(row=7, column=0, columnspan=2)
+
+        # Control buttons
+        button_frame = ttk.Frame(freq_frame)
+        button_frame.grid(row=8, column=0, columnspan=2, pady=10)
         
         self.freq_button = ttk.Button(button_frame, text="Start Frequency Analysis", 
                                     command=self.start_freq_analysis)
