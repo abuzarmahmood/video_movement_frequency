@@ -249,15 +249,33 @@ class MainGUI:
             self.status_label.configure(text=f"{cam_id} stopped")
 
     def apply_parameters(self):
-        """Write visualization parameters to file"""
+        """Write visualization parameters to file after validation"""
         try:
+            # Validate all parameters before saving
+            y_min = float(self.y_min_entry.get())
+            y_max = float(self.y_max_entry.get())
+            time_window = float(self.time_window_entry.get())
+            filter_length = int(self.median_filter_entry.get())
+            min_freq = float(self.min_freq_entry.get())
+            max_freq = float(self.max_freq_entry.get())
+            
+            # Basic validation
+            if y_min >= y_max:
+                raise ValueError("Y-min must be less than Y-max")
+            if time_window <= 0 or time_window > 60:
+                raise ValueError("Time window must be between 0 and 60 minutes")
+            if filter_length < 1:
+                raise ValueError("Filter length must be at least 1")
+            if min_freq >= max_freq:
+                raise ValueError("Min frequency must be less than max frequency")
+                
             params = {
-                "y_min": self.y_min_entry.get(),
-                "y_max": self.y_max_entry.get(),
-                "time_window": self.time_window_entry.get(),
-                "filter_length": self.median_filter_entry.get(),
-                "min_freq": self.min_freq_entry.get(),
-                "max_freq": self.max_freq_entry.get(),
+                "y_min": y_min,
+                "y_max": y_max,
+                "time_window": time_window,
+                "filter_length": filter_length,
+                "min_freq": min_freq,
+                "max_freq": max_freq,
                 "use_mean": self.use_mean_var.get()
             }
             
@@ -269,8 +287,10 @@ class MainGUI:
             with open(params_file, 'w') as f:
                 json.dump(params, f, indent=4)
             
-            self.status_label.configure(text="Parameters saved")
+            self.status_label.configure(text="Parameters validated and saved")
             
+        except ValueError as e:
+            messagebox.showerror("Validation Error", str(e))
         except Exception as e:
             messagebox.showerror("Error", f"Failed to save parameters: {str(e)}")
 
